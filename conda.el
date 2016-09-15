@@ -260,14 +260,12 @@ environment variable."
      (let ((prev-dir default-directory)
            (prev-env conda-env-current-name))
        (conda-env-activate ,name) ;; switch it up
-       ;; (cd (conda-env-name-to-dir conda-env-current-name)
        (unwind-protect
            (progn
              ,@forms) ;; evaluate forms
          (if prev-env ;; switch back
              (conda-env-activate prev-env)
-           (conda-env-deactivate))
-         (cd prev-dir))))))
+           (conda-env-deactivate))))))
 
 (defun conda--check-executable ()
   "Verify there is a conda executable available, throwing an error if not."
