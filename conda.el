@@ -1,4 +1,4 @@
-;;; conda.el --- a way to work with your conda environments in Emacs
+;;; conda.el --- Work with your conda environments in Emacs
 
 ;; Copyright (C) 2016 Rami Chowdhury
 ;; Author: Rami Chowdhury <rami.chowdhury@gmail.com>
@@ -11,7 +11,7 @@
 
 ;;; Commentary:
 
-;; A virtual environment manager tool for Emacs, assuming the use of Anaconda
+;; A conda environment manager tool for Emacs, assuming the use of Anaconda
 ;; and the `conda` tool.  See https://github.com/necaris/conda.el for more
 ;; details.
 
