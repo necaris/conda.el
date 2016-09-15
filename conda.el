@@ -521,7 +521,7 @@ buffer."
   :global t
   ;; Forms
   (if conda-env-autoactivate-mode ;; already on, now switching off
-      (advice-add 'switch-to-buffer :before #'conda--switch-buffer-auto-activate)
+      (advice-add 'switch-to-buffer :after #'conda--switch-buffer-auto-activate)
     (advice-remove 'switch-to-buffer #'conda--switch-buffer-auto-activate)))
 
 (provide 'conda)
