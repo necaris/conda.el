@@ -449,11 +449,11 @@ environment variable."
   ;; alias functions
   (defun eshell/activate (arg) (conda-env-activate arg))
   (defun eshell/deactivate () (conda-env-deactivate))
-  (defun eshell/rmvirtualenv (&rest args) (apply #'conda-env-rmvirtualenv args))
-  (defun eshell/mkvirtualenv (&rest args) (apply #'conda-env-mkvirtualenv args))
+  ;; (defun eshell/rmvirtualenv (&rest args) (apply #'conda-env-rmvirtualenv args))
+  ;; (defun eshell/mkvirtualenv (&rest args) (apply #'conda-env-mkvirtualenv args))
   (defun eshell/lsvirtualenv () (conda-env-list))
   ;; make completions work
-  (venv--make-pcompletions ("workon" "rmvirtualenv"))
+  (conda--make-pcompletions ("activate"))
   (message "Eshell virtualenv support initialized."))
 
 
