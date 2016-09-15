@@ -260,14 +260,12 @@ environment variable."
      (let ((prev-dir default-directory)
            (prev-env conda-env-current-name))
        (conda-env-activate ,name) ;; switch it up
-       (cd (conda-env-name-to-dir conda-env-current-name)
        (unwind-protect
            (progn
              ,@forms) ;; evaluate forms
          (if prev-env ;; switch back
              (conda-env-activate prev-env)
-           (conda-env-deactivate))
-         (cd prev-dir))))))
+           (conda-env-deactivate))))))
 
 (defun conda--check-executable ()
   "Verify there is a conda executable available, throwing an error if not."
@@ -374,9 +372,9 @@ environment variable."
 ;;              (venv-with-virtualenv it
 ;;                                    ,@forms))))
 
-(defun conda-env-with-env-shell-command (name command)
+(defun conda-with-env-shell-command (name command)
   "With environment NAME active, execute the shell string COMMAND."
-  (conda-env-with-env name (shell-command command)))
+  (conda-with-env name (shell-command command)))
 
 ;; (defun venv-allvirtualenv-shell-command (&optional command)
 ;;   "Just like venv-allvirtulenv, but executes a shell
@@ -449,11 +447,11 @@ environment variable."
   ;; alias functions
   (defun eshell/activate (arg) (conda-env-activate arg))
   (defun eshell/deactivate () (conda-env-deactivate))
-  (defun eshell/rmvirtualenv (&rest args) (apply #'conda-env-rmvirtualenv args))
-  (defun eshell/mkvirtualenv (&rest args) (apply #'conda-env-mkvirtualenv args))
+  ;; (defun eshell/rmvirtualenv (&rest args) (apply #'conda-env-rmvirtualenv args))
+  ;; (defun eshell/mkvirtualenv (&rest args) (apply #'conda-env-mkvirtualenv args))
   (defun eshell/lsvirtualenv () (conda-env-list))
   ;; make completions work
-  (venv--make-pcompletions ("workon" "rmvirtualenv"))
+  (conda--make-pcompletions ("activate"))
   (message "Eshell virtualenv support initialized."))
 
 
