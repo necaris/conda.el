@@ -260,7 +260,7 @@ environment variable."
      (let ((prev-dir default-directory)
            (prev-env conda-env-current-name))
        (conda-env-activate ,name) ;; switch it up
-       (cd (conda-env-name-to-dir conda-env-current-name)
+       ;; (cd (conda-env-name-to-dir conda-env-current-name)
        (unwind-protect
            (progn
              ,@forms) ;; evaluate forms
