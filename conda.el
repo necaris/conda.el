@@ -246,12 +246,10 @@ environment variable."
         (setenv "PATH" (concat env-exec-dir path-separator (getenv "PATH")))
         (setq eshell-path-env (getenv "PATH"))
         (setenv "VIRTUAL_ENV" env-dir)
-                                        ; (venv--set-venv-gud-pdb-command-name)
+        ; (venv--set-venv-gud-pdb-command-name)
         (run-hooks 'conda-env-postactivate-hook)))
-;    (when (called-interactively-p 'interactive)
-      (message "Switched to conda environment: %s" env-name)
-      ))
-;)
+      (message "Switched to conda environment: %s" env-name)))
+
 
 ;; for hilarious reasons to do with bytecompiling, this has to be here
 ;; instead of below
@@ -500,7 +498,7 @@ This can be set by a buffer-local or project-local variable (e.g. a
   "Add conda env activation if a buffer has a file, handling ARGS."
   (let ((filename (buffer-file-name)))
   (when filename
-    (message "switch-buffer auto-activating on <%s>" filename)
+    ; (message "switch-buffer auto-activating on <%s>" filename)
     (with-demoted-errors "Error: %S"
       (conda-env-activate-for-buffer)))))
 
