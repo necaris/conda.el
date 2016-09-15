@@ -116,7 +116,7 @@ environment variable."
          (valid-dirs (-filter 'conda--env-dir-is-valid potential-dirs)))
     (if (> (length valid-dirs) 0)
         (expand-file-name (car valid-dirs))
-      (error (concat "No such conda environment: " name)))))
+      (error "No such conda environment: %s" name))))
 
 (defun conda-env-dir-to-name (dir)
   "Extract the name of a conda environment from DIR."
@@ -129,7 +129,7 @@ environment variable."
   (let ((candidates (conda-env-candidates-from-dir conda-env-location)))
     (when (not (eq (length (-distinct candidates))
                    (length candidates)))
-      (error "Some virtualenvs have the same name!"))
+      (error "Some envs have the same name!"))
     candidates))
 
 (defun conda-env-candidates-from-dir (dir)
@@ -220,7 +220,7 @@ environment variable."
   (interactive)
   (let ((env-name (or name (conda--get-env-name))))
     (if (not (conda-env-is-valid env-name))
-        (error "Invalid conda environment specified!")
+        (error "Invalid conda environment specified: %s" env-name)
       ;; first, deactivate any existing env
       (conda-env-deactivate)
       ;; set the state of the environment, including setting (or re-setting)
@@ -501,7 +501,8 @@ This can be set by a buffer-local or project-local variable (e.g. a
   (let ((filename (buffer-file-name)))
   (when filename
     (message "switch-buffer auto-activating on <%s>" filename)
-    (conda-env-activate-for-buffer))))
+    (with-demoted-errors "Error: %S"
+      (conda-env-activate-for-buffer)))))
 
 ;;;###autoload
 (define-minor-mode conda-env-autoactivate-mode
