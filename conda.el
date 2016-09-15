@@ -1,5 +1,4 @@
-;;; conda.el --- a way to use your conda environments in Emacs
-;;; Largely stolen from virtualenvwrapper.el by James Porter
+;;; conda.el --- a way to work with your conda environments in Emacs
 
 ;; Copyright (C) 2016 Rami Chowdhury
 ;; Author: Rami Chowdhury <rami.chowdhury@gmail.com>
@@ -8,11 +7,13 @@
 ;; Keywords: python, environment, conda
 ;; Package-Requires: ((emacs "24") (pythonic "0.1.0") (dash "2.13.0") (s "1.11.0") (f "0.18.2"))
 
+;; Derived from James Porter's virtualenvwrapper.el (https://github.com/porterjamesj/virtualenvwrapper.el)
+
 ;;; Commentary:
 
 ;; A virtual environment manager tool for Emacs, assuming the use of Anaconda
-;; and the `conda` tool.
-;; https://github.com/necaris/conda.el for more details.
+;; and the `conda` tool.  See https://github.com/necaris/conda.el for more
+;; details.
 
 ;;; Code:
 (require 'dash)
@@ -246,12 +247,10 @@ environment variable."
         (setenv "PATH" (concat env-exec-dir path-separator (getenv "PATH")))
         (setq eshell-path-env (getenv "PATH"))
         (setenv "VIRTUAL_ENV" env-dir)
-                                        ; (venv--set-venv-gud-pdb-command-name)
+        ; (venv--set-venv-gud-pdb-command-name)
         (run-hooks 'conda-env-postactivate-hook)))
-;    (when (called-interactively-p 'interactive)
-      (message "Switched to conda environment: %s" env-name)
-      ))
-;)
+      (message "Switched to conda environment: %s" env-name)))
+
 
 ;; for hilarious reasons to do with bytecompiling, this has to be here
 ;; instead of below
@@ -500,7 +499,7 @@ This can be set by a buffer-local or project-local variable (e.g. a
   "Add conda env activation if a buffer has a file, handling ARGS."
   (let ((filename (buffer-file-name)))
   (when filename
-    (message "switch-buffer auto-activating on <%s>" filename)
+    ; (message "switch-buffer auto-activating on <%s>" filename)
     (with-demoted-errors "Error: %S"
       (conda-env-activate-for-buffer)))))
 
