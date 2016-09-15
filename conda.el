@@ -374,9 +374,9 @@ environment variable."
 ;;              (venv-with-virtualenv it
 ;;                                    ,@forms))))
 
-(defun conda-env-with-env-shell-command (name command)
+(defun conda-with-env-shell-command (name command)
   "With environment NAME active, execute the shell string COMMAND."
-  (conda-env-with-env name (shell-command command)))
+  (conda-with-env name (shell-command command)))
 
 ;; (defun venv-allvirtualenv-shell-command (&optional command)
 ;;   "Just like venv-allvirtulenv, but executes a shell
