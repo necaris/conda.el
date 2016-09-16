@@ -77,6 +77,10 @@ environment variable."
   (if (eq system-type 'windows-nt) "Scripts" "bin")
   "Name of the directory containing executables.  It is system dependent.")
 
+;; placeholder for buffer-local conda environment name
+(defvar conda-project-env-name nil
+  "Current conda environment for the project.  Should always be buffer-local.")
+
 ;; internal utility functions
 
 ;; (defun conda--set-env-gud-pdb-command-name ()
@@ -228,7 +232,7 @@ environment variable."
       ;; a buffer-local variable that allows us to skip discovery when we
       ;; switch back into the buffer.
       (setq conda-env-current-name env-name)
-      (set (make-local-variable 'project-conda-env-name) env-name)
+      (set (make-local-variable 'conda-project-env-name) env-name)
       ;; run hooks
       (run-hooks 'conda-env-preactivate-hook)
       ;; push it onto the history
@@ -483,11 +487,11 @@ environment variable."
   "Activate the conda environment implied by the current buffer.
 
 This can be set by a buffer-local or project-local variable (e.g. a
-`.dir-locals.el` that defines `project-conda-env-name`), or inferred from an
+`.dir-locals.el` that defines `conda-project-env-name`), or inferred from an
 `environment.yml` or similar at the project level."
   (interactive)
-  (let ((env-name (if (boundp 'project-conda-env-name)
-                      project-conda-env-name
+  (let ((env-name (if conda-project-env-name
+                      conda-project-env-name
                     (conda--infer-env-from-buffer))))
     (if (not env-name)
         (message "No conda environment for file <%s>" (buffer-file-name))
