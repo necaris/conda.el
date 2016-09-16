@@ -1,19 +1,18 @@
-;;; conda.el --- Work with your conda environments in Emacs
+;;; conda.el --- Work with your conda environments
 
 ;; Copyright (C) 2016 Rami Chowdhury
 ;; Author: Rami Chowdhury <rami.chowdhury@gmail.com>
 ;; URL: http://github.com/necaris/conda.el
 ;; Version: 20160914
 ;; Keywords: python, environment, conda
-;; Package-Requires: ((emacs "24") (pythonic "0.1.0") (dash "2.13.0") (s "1.11.0") (f "0.18.2"))
+;; Package-Requires: ((emacs "24.4") (pythonic "0.1.0") (dash "2.13.0") (s "1.11.0") (f "0.18.2"))
 
 ;; Derived from James Porter's virtualenvwrapper.el (https://github.com/porterjamesj/virtualenvwrapper.el)
 
 ;;; Commentary:
 
-;; A conda environment manager tool for Emacs, assuming the use of Anaconda
-;; and the `conda` tool.  See https://github.com/necaris/conda.el for more
-;; details.
+;; A conda environment manager, assuming the use of Anaconda and the `conda`
+;; tool.  See https://github.com/necaris/conda.el for more details.
 
 ;;; Code:
 (require 'dash)
@@ -55,16 +54,16 @@ environment variable."
 ;; (defvar venv-postrmvirtualenv-hook nil
 ;;   "Hook run after deleting a virtualenv.")
 
-(defvar conda-preactivate-hook nil
+(defcustom conda-preactivate-hook nil
   "Hook run before a conda environment is activated.")
 
-(defvar conda-postactivate-hook nil
+(defcustom conda-postactivate-hook nil
   "Hook run after a conda environment is activated.")
 
-(defvar conda-predeactivate-hook nil
+(defcustom conda-predeactivate-hook nil
   "Hook run before a conda environment is deactivated.")
 
-(defvar conda-postdeactivate-hook nil
+(defcustom conda-postdeactivate-hook nil
   "Hook run after a conda environment is deactivated.")
 
 ;; internal variables that you probably shouldn't mess with
