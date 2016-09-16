@@ -20,6 +20,7 @@
 (require 's)
 (require 'pythonic)
 (require 'f)
+(require 'eshell)
 
 ;; TODO:
 ;; - want to be able to show what env that is, in mode-line
