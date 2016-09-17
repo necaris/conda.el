@@ -3,6 +3,8 @@
 Emacs library for working with [conda environments](http://conda.pydata.org/docs/using/envs.html),
 largely ported from [virtualenvwrapper.el](https://github.com/porterjamesj/virtualenvwrapper.el).
 
+[![MELPA](http://melpa.milkbox.net/packages/conda-badge.svg)](http://melpa.milkbox.net/#/conda)
+
 ## what it does
 
 * Makes Python shells, interactive shells, eshell, anaconda-mode, and so on
@@ -14,8 +16,8 @@ largely ported from [virtualenvwrapper.el](https://github.com/porterjamesj/virtu
 
 * Install [conda](http://conda.pydata.org/docs/index.html) (included if you
   have installed [Anaconda](https://www.continuum.io/downloads) or [Miniconda](http://conda.pydata.org/miniconda.html))
-* _coming soon_ Install from MELPA (`M-x package-install conda`),
-  or just put `conda.el` on your load path.
+* Install from MELPA (`M-x package-install conda`), or just put `conda.el`
+  on your load path.
 * Add it to your configuration (e.g. your `.emacs` or `init.el`). Something like
   this should work:
 
