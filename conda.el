@@ -96,9 +96,12 @@ environment variable."
   (setq conda-env-history nil))
 
 ;; TODO make this more configurable -- for now we know it'll be '/envs'
-(defvar conda-env-location
-  (concat (file-name-as-directory conda-anaconda-home) "envs")
-  "Location of the conda environments.")
+(defcustom conda-env-subdirectory "envs"
+  "Location of the environments subdirectory relative to ANACONDA_HOME.")
+
+(defun conda-env-location ()
+  "Location of the conda environments."
+  (concat (file-name-as-directory conda-anaconda-home) conda-env-subdirectory))
 
 (defun conda--env-dir-is-valid (potential-directory)
   "Confirm that POTENTIAL-DIRECTORY is a valid conda environment."
@@ -115,7 +118,7 @@ environment variable."
 
 (defun conda-env-name-to-dir (name)
   "Translate NAME into the directory where the environment is located."
-  (let* ((env-possibilities (list conda-env-location)) ;; can add venv-location?
+  (let* ((env-possibilities (list (conda-env-location))) ;; can add venv-location?
          (potential-dirs (mapcar (lambda (x) (concat x "/" name))
                                  env-possibilities))
          (valid-dirs (-filter 'conda--env-dir-is-valid potential-dirs)))
@@ -131,21 +134,23 @@ environment variable."
 
 (defun conda-env-candidates ()
   "Fetch all the candidate environments."
-  (let ((candidates (conda-env-candidates-from-dir conda-env-location)))
+  (let ((candidates (conda-env-candidates-from-dir (conda-env-location))))
     (when (not (eq (length (-distinct candidates))
                    (length candidates)))
       (error "Some envs have the same name!"))
-    candidates))
+    candidates)) (conda-env-candidates)
 
 (defun conda-env-candidates-from-dir (dir)
   "Return a list of candidate environment names from DIR."
   (let ((proper-dir (file-name-as-directory (expand-file-name dir))))
-    (-filter (lambda (s)
-               (let ((subdir (concat proper-dir s)))
-                 (car (file-attributes
-                       (concat (file-name-as-directory subdir)
-                               conda-env-executables-dir)))))
-             (directory-files proper-dir nil "^[^.]"))))
+    (if (not (file-accessible-directory-p proper-dir))
+	(list) ;; an empty list of candidates
+      (-filter (lambda (s)
+		 (let ((subdir (concat proper-dir s)))
+		   (car (file-attributes
+			 (concat (file-name-as-directory subdir)
+				 conda-env-executables-dir)))))
+	       (directory-files proper-dir nil "^[^.]")))))
 
 (defun conda--includes-path-element (env-location elem)
   "Check whether ENV-LOCATION is in the path hierarchy of ELEM."
@@ -153,7 +158,7 @@ environment variable."
 
 (defun conda-env-stripped-path (path)
   "Strip PATH of anything inserted by the current environment."
-  (let* ((xp-location (expand-file-name conda-env-location))
+  (let* ((xp-location (expand-file-name (conda-env-location)))
          (proper-location (file-name-as-directory xp-location)))
     (-filter (lambda (p)
                (conda--includes-path-element proper-location p))
@@ -199,17 +204,6 @@ environment variable."
   (run-hooks 'conda-postdeactivate-hook)
   (when (called-interactively-p 'interactive)
     (message "conda env deactivated")))
-
-;;;###autoload
-(defun conda-env-set-location (&optional location)
-  "Set where to look for conda environments to LOCATION.  (Useful e.g. with tox)."
-  (interactive)
-  (when (not location)
-    (setq location (read-directory-name "New conda env location: ")))
-  (conda-env-deactivate)
-  (setq conda-env-location location)
-  (when (called-interactively-p 'interactive)
-    (message (concat "Conda env location: " location))))
 
 (defun conda--get-env-name ()
   "Read environment name, prompting appropriately whether an env is active now."
