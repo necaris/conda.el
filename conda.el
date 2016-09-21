@@ -138,7 +138,7 @@ environment variable."
     (when (not (eq (length (-distinct candidates))
                    (length candidates)))
       (error "Some envs have the same name!"))
-    candidates)) (conda-env-candidates)
+    candidates))
 
 (defun conda-env-candidates-from-dir (dir)
   "Return a list of candidate environment names from DIR."
