@@ -40,6 +40,12 @@ The default location is ~/.anaconda3/, or read from the ANACONDA_HOME
 environment variable."
   :group 'conda)
 
+(defcustom venv-system-gud-pdb-command-name gud-pdb-command-name
+  "Whatever `gud-pdb-command-name' is (usually \\[pdb]).")
+
+(defcustom conda-env-subdirectory "envs"
+  "Location of the environments subdirectory relative to ANACONDA_HOME.")
+
 ;; hooks
 
 ;; (defvar venv-premkvirtualenv-hook nil
@@ -72,36 +78,22 @@ environment variable."
 
 (defvar conda-env-current-name nil "Name of current conda env.")
 
-;; copy from virtualenv.el
-(defvar conda-env-executables-dir
+(defvar conda-env-executables-dir  ;; copied from virtualenv.el
   (if (eq system-type 'windows-nt) "Scripts" "bin")
   "Name of the directory containing executables.  It is system dependent.")
 
-;; placeholder for buffer-local conda environment name
-(defvar conda-project-env-name nil
+(defvar conda-project-env-name nil  ;; placeholder for buffer-local variable
   "Current conda environment for the project.  Should always be buffer-local.")
 
 ;; internal utility functions
 
-;; (defun conda--set-env-gud-pdb-command-name ()
-;;   "When in a conda environment, call pdb as \\[python -m pdb]."
-;;   (setq gud-pdb-command-name "python -m pdb"))
+(defun conda--set-env-gud-pdb-command-name ()
+  "When in a conda environment, call pdb as \\[python -m pdb]."
+  (setq gud-pdb-command-name "python -m pdb"))
 
-;; (defun conda--set-system-gud-pdb-command-name ()
-;;   "Set the system \\[pdb] command."
-;;   (setq gud-pdb-command-name venv-system-gud-pdb-command-name))
-
-(defun conda-env-clear-history ()
-  "Clear the history of conda environments that have been activated."
-  (setq conda-env-history nil))
-
-;; TODO make this more configurable -- for now we know it'll be '/envs'
-(defcustom conda-env-subdirectory "envs"
-  "Location of the environments subdirectory relative to ANACONDA_HOME.")
-
-(defun conda-env-location ()
-  "Location of the conda environments."
-  (concat (file-name-as-directory conda-anaconda-home) conda-env-subdirectory))
+(defun conda--set-system-gud-pdb-command-name ()
+  "Set the system \\[pdb] command."
+  (setq gud-pdb-command-name conda-system-gud-pdb-command-name))
 
 (defun conda--env-dir-is-valid (potential-directory)
   "Confirm that POTENTIAL-DIRECTORY is a valid conda environment."
@@ -115,6 +107,64 @@ environment variable."
   (-filter
    (lambda (p) (not (s-blank? p)))
    items))
+
+(defun conda--includes-path-element (env-location elem)
+  "Check whether ENV-LOCATION is in the path hierarchy of ELEM."
+  (not (s-contains? env-location elem)))
+
+(defun conda--purge-history (candidates)
+  "Remove history candidates that are not in CANDIDATES."
+  (setq conda-env-history
+        (-filter (lambda (s) (not (-contains? candidates s)))
+                 conda-env-history)))
+
+(defun conda--get-env-name ()
+  "Read environment name, prompting appropriately whether an env is active now."
+  (let* ((current conda-env-current-name)
+         (prompt (if current
+                     (format "Choose a conda environment (currently %s): " current)
+                   "Choose a conda environment: ")))
+    (conda-env-read-name prompt)))
+
+(defun conda--check-executable ()
+  "Verify there is a conda executable available, throwing an error if not."
+  (unless (executable-find "conda")
+    (error "There doesn't appear to be a conda executable on your exec path.  A
+    common cause of problems like this is GUI Emacs not having environment
+    variables set up like the shell.  Check out
+    https://github.com/purcell/exec-path-from-shell for a robust solution to
+    this problem.")))
+
+(defun conda--find-env-yml (dir)
+  "Find an environment.yml in DIR or its parent directories."
+  ;; TODO: implement an optimized finder with e.g. projectile?
+  (let* ((contains-env-yml-p (lambda (p)
+                               (f-exists? (f-expand "environment.yml" p))))
+         (containing-path (f-traverse-upwards contains-env-yml-p dir)))
+    (if containing-path
+        (f-expand "environment.yml" containing-path)
+      nil)))
+
+(defun conda--get-name-from-env-yml (filename)
+  "Pull the `name` property out of the YAML file at FILENAME."
+  (when filename
+    (let ((env-yml-contents (f-read-text filename)))
+      (if (string-match "name:[ ]*\\(\\w+\\)[ ]*$" env-yml-contents)
+          (match-string 1 env-yml-contents)
+        nil))))
+
+(defun conda--infer-env-from-buffer ()
+  "Search up the project tree for an `environment.yml` defining a conda env."
+  (let ((current-dir (f-dirname (buffer-file-name))))
+    (conda--get-name-from-env-yml (conda--find-env-yml current-dir))))
+
+(defun conda-env-clear-history ()
+  "Clear the history of conda environments that have been activated."
+  (setq conda-env-history nil))
+
+(defun conda-env-location ()
+  "Location of the conda environments."
+  (concat (file-name-as-directory conda-anaconda-home) conda-env-subdirectory))
 
 (defun conda-env-name-to-dir (name)
   "Translate NAME into the directory where the environment is located."
@@ -152,10 +202,6 @@ environment variable."
 				 conda-env-executables-dir)))))
 	       (directory-files proper-dir nil "^[^.]")))))
 
-(defun conda--includes-path-element (env-location elem)
-  "Check whether ENV-LOCATION is in the path hierarchy of ELEM."
-  (not (s-contains? env-location elem)))
-
 (defun conda-env-stripped-path (path)
   "Strip PATH of anything inserted by the current environment."
   (let* ((xp-location (expand-file-name (conda-env-location)))
@@ -163,12 +209,6 @@ environment variable."
     (-filter (lambda (p)
                (conda--includes-path-element proper-location p))
              path)))
-
-(defun conda--purge-history (candidates)
-  "Remove history candidates that are not in CANDIDATES."
-  (setq conda-env-history
-        (-filter (lambda (s) (not (-contains? candidates s)))
-                 conda-env-history)))
 
 (defun conda-env-is-valid (name)
   "Check whether NAME points to a valid conda environment."
@@ -204,14 +244,6 @@ environment variable."
   (run-hooks 'conda-postdeactivate-hook)
   (when (called-interactively-p 'interactive)
     (message "conda env deactivated")))
-
-(defun conda--get-env-name ()
-  "Read environment name, prompting appropriately whether an env is active now."
-  (let* ((current conda-env-current-name)
-         (prompt (if current
-                     (format "Choose a conda environment (currently %s): " current)
-                   "Choose a conda environment: ")))
-    (conda-env-read-name prompt)))
 
 ;;;###autoload
 (defun conda-env-activate (&optional name)
@@ -264,15 +296,6 @@ environment variable."
          (if prev-env ;; switch back
              (conda-env-activate prev-env)
            (conda-env-deactivate))))))
-
-(defun conda--check-executable ()
-  "Verify there is a conda executable available, throwing an error if not."
-  (unless (executable-find "conda")
-    (error "There doesn't appear to be a conda executable on your exec path.  A
-    common cause of problems like this is GUI Emacs not having environment
-    variables set up like the shell.  Check out
-    https://github.com/purcell/exec-path-from-shell for a robust solution to
-    this problem.")))
 
 ;; ;;;###autoload
 ;; (defun venv-mkvirtualenv (&rest names)
@@ -370,6 +393,7 @@ environment variable."
 ;;              (venv-with-virtualenv it
 ;;                                    ,@forms))))
 
+;;;###autoload
 (defun conda-with-env-shell-command (name command)
   "With environment NAME active, execute the shell string COMMAND."
   (conda-with-env name (shell-command command)))
@@ -451,30 +475,6 @@ environment variable."
   ;; make completions work
   (conda--make-pcompletions ("activate"))
   (message "Eshell virtualenv support initialized."))
-
-
-(defun conda--find-env-yml (dir)
-  "Find an environment.yml in DIR or its parent directories."
-  ;; TODO: implement an optimized finder with e.g. projectile?
-  (let* ((contains-env-yml-p (lambda (p)
-                               (f-exists? (f-expand "environment.yml" p))))
-         (containing-path (f-traverse-upwards contains-env-yml-p dir)))
-    (if containing-path
-        (f-expand "environment.yml" containing-path)
-      nil)))
-
-(defun conda--get-name-from-env-yml (filename)
-  "Pull the `name` property out of the YAML file at FILENAME."
-  (when filename
-    (let ((env-yml-contents (f-read-text filename)))
-      (if (string-match "name:[ ]*\\(\\w+\\)[ ]*$" env-yml-contents)
-          (match-string 1 env-yml-contents)
-        nil))))
-
-(defun conda--infer-env-from-buffer ()
-  "Search up the project tree for an `environment.yml` defining a conda env."
-  (let ((current-dir (f-dirname (buffer-file-name))))
-    (conda--get-name-from-env-yml (conda--find-env-yml current-dir))))
 
 ;;;###autoload
 (defun conda-env-activate-for-buffer ()
