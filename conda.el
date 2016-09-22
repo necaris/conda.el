@@ -40,7 +40,10 @@ The default location is ~/.anaconda3/, or read from the ANACONDA_HOME
 environment variable."
   :group 'conda)
 
-(defcustom venv-system-gud-pdb-command-name gud-pdb-command-name
+(defcustom conda-system-gud-pdb-command-name
+  (if (boundp 'gud-pdb-command-name)
+      gud-pdb-command-name
+    (setq gud-pdb-command-name "python -m pdb"))
   "Whatever `gud-pdb-command-name' is (usually \\[pdb]).")
 
 (defcustom conda-env-subdirectory "envs"
@@ -240,7 +243,7 @@ environment variable."
   (setenv "VIRTUAL_ENV" nil)
   (setq conda-env-current-name nil)
   (setq eshell-path-env (getenv "PATH"))
-  ;; (venv--set-system-gud-pdb-command-name)
+  (conda--set-system-gud-pdb-command-name)
   (run-hooks 'conda-postdeactivate-hook)
   (when (called-interactively-p 'interactive)
     (message "conda env deactivated")))
@@ -277,7 +280,7 @@ environment variable."
         (setenv "PATH" (concat env-exec-dir path-separator (getenv "PATH")))
         (setq eshell-path-env (getenv "PATH"))
         (setenv "VIRTUAL_ENV" env-dir)
-        ; (venv--set-venv-gud-pdb-command-name)
+        (conda--set-env-gud-pdb-command-name)
         (run-hooks 'conda-env-postactivate-hook)))
       (message "Switched to conda environment: %s" env-name)))
 
