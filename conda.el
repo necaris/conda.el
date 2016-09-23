@@ -22,8 +22,6 @@
 (require 'eshell)
 
 ;; TODO:
-;; - want to be able to show what env that is, in mode-line
-;; later:
 ;; - conda install / uninstall from emacs?
 ;; - want to set multiple possible home dirs for envs
 ;; - make this work in addition to `pew` or `virtualenvwrapper` or similar
@@ -161,6 +159,13 @@ environment variable."
   (let ((current-dir (f-dirname (buffer-file-name))))
     (conda--get-name-from-env-yml (conda--find-env-yml current-dir))))
 
+(defun conda--set-python-shell-virtualenv-var (location)
+  "Set appropriate Python shell variable to LOCATION."
+  ;; Emacs 25.1+ defines python-shell-virtualenv-root
+  (if (boundp 'python-shell-virtualenv-root)
+      (setq python-shell-virtualenv-root location)
+    (setq python-shell-virtualenv-path location)))
+
 (defun conda-env-clear-history ()
   "Clear the history of conda environments that have been activated."
   (setq conda-env-history nil))
@@ -235,7 +240,7 @@ environment variable."
   "Deactivate the current conda env."
   (interactive)
   (run-hooks 'conda-predeactivate-hook)
-  (setq python-shell-virtualenv-path nil)
+  (conda--set-python-shell-virtualenv-var nil)
   (setq exec-path (conda-env-stripped-path exec-path))
   (setenv "PATH" (s-join path-separator
                   (conda-env-stripped-path
@@ -273,7 +278,7 @@ environment variable."
         ;; others know how to work on this
         (pythonic-activate env-dir)
         ;; setup the python shell
-        (setq python-shell-virtualenv-path env-dir)
+        (conda--set-python-shell-virtualenv-var env-dir)
         ;; setup emacs exec-path
         (add-to-list 'exec-path env-exec-dir)
         ;; setup the environment for subprocesses, eshell, etc
