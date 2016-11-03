@@ -85,6 +85,8 @@ environment variable."
 
 (defvar conda-project-env-name nil  ;; placeholder for buffer-local variable
   "Current conda environment for the project.  Should always be buffer-local.")
+;; ensure it's considered safe
+(put 'conda-project-env-name 'safe-local-variable 'stringp)
 
 ;; internal utility functions
 
