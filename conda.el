@@ -270,7 +270,7 @@ environment variable."
       (setq conda-env-current-name env-name)
       (set (make-local-variable 'conda-project-env-name) env-name)
       ;; run hooks
-      (run-hooks 'conda-env-preactivate-hook)
+      (run-hooks 'conda-preactivate-hook)
       ;; push it onto the history
       (add-to-list 'conda-env-history conda-env-current-name)
       (let* ((env-dir (conda-env-name-to-dir env-name))
@@ -288,7 +288,7 @@ environment variable."
         (setq eshell-path-env (getenv "PATH"))
         (setenv "VIRTUAL_ENV" env-dir)
         (conda--set-env-gud-pdb-command-name)
-        (run-hooks 'conda-env-postactivate-hook)))
+        (run-hooks 'conda-postactivate-hook)))
       (message "Switched to conda environment: %s" env-name)))
 
 
