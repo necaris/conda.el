@@ -217,7 +217,8 @@ environment variable."
   (let* ((xp-location (expand-file-name (conda-env-location)))
          (proper-location (file-name-as-directory xp-location)))
     (-filter (lambda (p)
-               (conda--includes-path-element proper-location p))
+	       (and (not (null p))
+		    (conda--includes-path-element proper-location p)))
              path)))
 
 (defun conda-env-is-valid (name)
