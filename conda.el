@@ -1,6 +1,6 @@
 ;;; conda.el --- Work with your conda environments
 
-;; Copyright (C) 2016 Rami Chowdhury
+;; Copyright (C) 2016-2017 Rami Chowdhury
 ;; Author: Rami Chowdhury <rami.chowdhury@gmail.com>
 ;; URL: http://github.com/necaris/conda.el
 ;; Version: 20160914
@@ -44,22 +44,13 @@ environment variable."
     (setq gud-pdb-command-name "python -m pdb"))
   "Whatever `gud-pdb-command-name' is (usually \\[pdb]).")
 
+(defcustom conda-env-home-directory conda-anaconda-home
+  "Location of the directory containing the environments directory.")
+
 (defcustom conda-env-subdirectory "envs"
   "Location of the environments subdirectory relative to ANACONDA_HOME.")
 
-;; hooks
-
-;; (defvar venv-premkvirtualenv-hook nil
-;;   "Hook run before creating a new virtualenv.")
-
-;; (defvar venv-postmkvirtualenv-hook nil
-;;   "Hook run after creating a new virtualenv.")
-
-;; (defvar venv-prermvirtualenv-hook nil
-;;   "Hook run before deleting a virtualenv.")
-
-;; (defvar venv-postrmvirtualenv-hook nil
-;;   "Hook run after deleting a virtualenv.")
+;; hooks -- TODO once we actually have environment creation / deletion
 
 (defcustom conda-preactivate-hook nil
   "Hook run before a conda environment is activated.")
@@ -136,7 +127,7 @@ environment variable."
     common cause of problems like this is GUI Emacs not having environment
     variables set up like the shell.  Check out
     https://github.com/purcell/exec-path-from-shell for a robust solution to
-    this problem.")))
+    this problem")))
 
 (defun conda--find-env-yml (dir)
   "Find an environment.yml in DIR or its parent directories."
@@ -308,67 +299,6 @@ environment variable."
              (conda-env-activate prev-env)
            (conda-env-deactivate))))))
 
-;; ;;;###autoload
-;; (defun venv-mkvirtualenv (&rest names)
-;; "Create new virtualenvs NAMES. If venv-location is a single
-;; directory, the new virtualenvs are made there; if it is a list of
-;; directories, the new virtualenvs are made in the current
-;; default-directory."
-;;   (interactive)
-;;   (venv--check-executable)
-;;   (let ((parent-dir (if (stringp venv-location)
-;;                         (file-name-as-directory
-;;                          (expand-file-name venv-location))
-;;                       default-directory))
-;;         (python-exe-arg (when current-prefix-arg
-;;                           (concat "--python="
-;;                                   (read-string "Python executable: " "python"))))
-;;         (names (if names names
-;;                  (list (read-from-minibuffer "New virtualenv: ")))))
-;;     ;; map over all the envs we want to make
-;;     (--each names
-;;       ;; error if this env already exists
-;;       (when (-contains? (venv-get-candidates) it)
-;;         (error "A virtualenv with this name already exists!"))
-;;       (run-hooks 'venv-premkvirtualenv-hook)
-;;       (shell-command (concat "virtualenv " python-exe-arg " " parent-dir it))
-;;       (when (listp venv-location)
-;;         (add-to-list 'venv-location (concat parent-dir it)))
-;;       (venv-with-virtualenv it
-;;                             (run-hooks 'venv-postmkvirtualenv-hook))
-;;       (when (called-interactively-p 'interactive)
-;;         (message (concat "Created virtualenv: " it))))
-;;     ;; workon the last venv we made
-;;     (venv-workon (car (last names)))))
-
-;; ;;;###autoload
-;; (defun venv-rmvirtualenv (&rest names)
-;;   "Delete virtualenvs NAMES."
-;;   (interactive)
-;;   ;; deactivate first
-;;   (venv-deactivate)
-;;   ;; check validity and read names if necessary
-;;   (if names
-;;       (--map (when (not (venv-is-valid it))
-;;                (error "Invalid virtualenv specified!"))
-;;              names)
-;;     (setq names (list (venv-read-name "Virtualenv to delete: "))))
-;;   ;; map over names, deleting the appropriate directory
-;;   (--each names
-;;     (run-hooks 'venv-prermvirtualenv-hook)
-;;     (delete-directory (venv-name-to-dir it) t)
-;;     ;; get it out of the history so it doesn't show up in completing reads
-;;     (setq venv-history (-filter
-;;                         (lambda (s) (not (s-equals? s it))) venv-history))
-;;     ;; if location is a list, delete it from the list
-;;     (when (listp venv-location)
-;;       (setq venv-location
-;;             (-filter (lambda (locs) (not (s-equals?
-;;                                           it
-;;                                           (venv-dir-to-name locs))))
-;;                      venv-location)))
-;;     (run-hooks 'venv-postrmvirtualenv-hook)
-;;     (message (concat "Deleted virtualenv: " it))))
 
 ;;;###autoload
 (defun conda-env-list ()
@@ -378,47 +308,11 @@ environment variable."
       "*Conda envs*"
       (princ (s-join "\n" (conda-env-candidates)))))
 
-;; ;;;###autoload
-;; (defun venv-cdvirtualenv (&optional subdir)
-;;   "Change to the directory of current virtualenv. If
-;; SUBDIR is passed, append that to the path such that
-;; we are immediately in that directory."
-;;   (interactive)
-;;   (if venv-current-dir
-;;       (let ((going-to (concat (file-name-as-directory
-;;                                (expand-file-name venv-current-dir))
-;;                               subdir)))
-;;         (cd going-to)
-;;         (when (called-interactively-p 'interactive)
-;;           (message (concat "Now in directory: " going-to))))
-;;     (error "No virtualenv is currently active!")))
-
-;; ;; macros and functions supporting executing elisp or
-;; ;; shell commands in a particular venv
-
-;; (defmacro venv-allvirtualenv (&rest forms)
-;;   "For each virtualenv, activate it, switch to its directory,
-;; and then evaluate FORMS."
-;;   `(progn
-;;      (--each (venv-get-candidates)
-;;              (venv-with-virtualenv it
-;;                                    ,@forms))))
 
 ;;;###autoload
-(defun conda-with-env-shell-command (name command)
+(defun conda-with-env-shell-command (name command) ;; FIXME
   "With environment NAME active, execute the shell string COMMAND."
   (conda-with-env name (shell-command command)))
-
-;; (defun venv-allvirtualenv-shell-command (&optional command)
-;;   "Just like venv-allvirtulenv, but executes a shell
-;; command (COMMAND) rather than elisp forms."
-;;   (interactive)
-;;   (when (not command)
-;;     (setq command (read-from-minibuffer "Shell command to execute: ")))
-;;   (-map (lambda (name)
-;;           (venv-with-virtualenv-shell-command name command))
-;;         (venv-get-candidates))
-;;   (message (concat "Executed " command " in all virtualenvs")))
 
 
 ;; Code for setting up interactive shell and eshell
