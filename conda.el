@@ -432,15 +432,12 @@ environment variable."
    process
    (concat "source activate " conda-env-current-name)))
 
-;;;###autoload
-(defun conda-env-initialize-interactive-shells ()
-  "Configure interactive shells for use with conda.el."
-  (defadvice shell (around strip-env ())
-    "Use the environment without the env to start up a new shell."
-    (let* ((buffer-name (or buffer "*shell*"))
+(defun conda--shell-strip-env (orig-fun &rest args)
+  "Use the environment without env to start a new shell, passing ORIG-FUN ARGS."
+  (let* ((buffer-name (or buffer "*shell*"))
            (buffer-exists-already (get-buffer buffer-name)))
       (if (or buffer-exists-already (not conda-env-current-name))
-          ad-do-it
+          (apply orig-fun args)
         (progn (setenv "PATH"
                        (s-join
                         path-separator
@@ -455,9 +452,12 @@ environment variable."
                         conda-env-executables-dir
                         path-separator
                         (getenv "PATH")))
-               (setenv "VIRTUAL_ENV" (conda-env-name-to-dir conda-env-current-name))))
-      (ad-activate 'shell))))
+               (setenv "VIRTUAL_ENV" (conda-env-name-to-dir conda-env-current-name))))))
 
+;;;###autoload
+(defun conda-env-initialize-interactive-shells ()
+  "Configure interactive shells for use with conda.el."
+  (advice-add 'shell :around #'conda--shell-strip-env))
 
 ;; eshell
 
