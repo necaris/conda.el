@@ -73,6 +73,8 @@ environment variable."
 
 (defvar conda-env-current-name nil "Name of current conda env.")
 
+(defvar conda-env-current-dir nil "Directory holding current conda env.")
+
 (defvar conda-env-executables-dir  ;; copied from virtualenv.el
   (if (eq system-type 'windows-nt) "Scripts" "bin")
   "Name of the directory containing executables.  It is system dependent.")
@@ -152,8 +154,9 @@ environment variable."
 
 (defun conda--infer-env-from-buffer ()
   "Search up the project tree for an `environment.yml` defining a conda env."
-  (let ((current-dir (f-dirname (buffer-file-name))))
-    (conda--get-name-from-env-yml (conda--find-env-yml current-dir))))
+  (let ((filename (buffer-file-name)))
+    (when filename
+      (conda--get-name-from-env-yml (conda--find-env-yml (f-dirname filename))))))
 
 (defun conda--set-python-shell-virtualenv-var (location)
   "Set appropriate Python shell variable to LOCATION."
@@ -178,11 +181,12 @@ It's platform specific in that it uses the platform's native path separator."
   (setq conda-env-history nil))
 
 (defun conda-env-location ()
-  "Location of the conda environments."
-  (concat (file-name-as-directory conda-env-home-directory) conda-env-subdirectory))
+  "Default location of the conda environments."
+  (concat (file-name-as-directory conda-anaconda-home) conda-env-subdirectory))
 
 (defun conda-env-name-to-dir (name)
   "Translate NAME into the directory where the environment is located."
+  ;; TODO: if it's already a directory, and a valid environment, leave it be
   (let* ((env-possibilities (list (conda-env-location))) ;; can add venv-location?
          (potential-dirs (mapcar (lambda (x) (concat x "/" name))
                                  env-possibilities))
@@ -193,12 +197,14 @@ It's platform specific in that it uses the platform's native path separator."
 
 (defun conda-env-dir-to-name (dir)
   "Extract the name of a conda environment from DIR."
+  ;; TODO: only do this extraction if it's under the default envs dir
   (let* ((pieces (split-string dir "/"))
         (non-blank (conda--filter-blanks pieces)))
     (car (last non-blank))))
 
 (defun conda-env-candidates ()
   "Fetch all the candidate environments."
+  ;; TODO: include the current one if it's valid
   (let ((candidates (conda-env-candidates-from-dir (conda-env-location))))
     (when (not (eq (length (-distinct candidates))
                    (length candidates)))
@@ -219,6 +225,7 @@ It's platform specific in that it uses the platform's native path separator."
 
 (defun conda-env-stripped-path (path)
   "Strip PATH of anything inserted by the current environment."
+  ;; TODO: don't strip the root environment
   (let* ((xp-location (expand-file-name (conda-env-location)))
          (proper-location (file-name-as-directory xp-location)))
     (-filter (lambda (p)
