@@ -1,9 +1,9 @@
-;;; conda.el --- Work with your conda environments
+;;; conda --- Work with your conda environments
 
 ;; Copyright (C) 2016-2017 Rami Chowdhury
 ;; Author: Rami Chowdhury <rami.chowdhury@gmail.com>
 ;; URL: http://github.com/necaris/conda.el
-;; Version: 20160914
+;; Version: 0.2
 ;; Keywords: python, environment, conda
 ;; Package-Requires: ((emacs "24.4") (pythonic "0.1.0") (dash "2.13.0") (s "1.11.0") (f "0.18.2"))
 
@@ -48,7 +48,7 @@ environment variable."
   "Location of the directory containing the environments directory.")
 
 (defcustom conda-env-subdirectory "envs"
-  "Location of the environments subdirectory relative to ANACONDA_HOME.")
+  "Location of the environments subdirectory relative to `conda-anaconda-home`")
 
 (defcustom conda-message-on-environment-switch t
   "Whether to message when switching environments. Default true.")
@@ -79,10 +79,10 @@ environment variable."
   (if (eq system-type 'windows-nt) "Scripts" "bin")
   "Name of the directory containing executables.  It is system dependent.")
 
-(defvar conda-project-env-name nil  ;; placeholder for buffer-local variable
+(defvar conda-env-name-for-buffer nil  ;; placeholder for buffer-local variable
   "Current conda environment for the project.  Should always be buffer-local.")
 ;; ensure it's considered safe
-(put 'conda-project-env-name 'safe-local-variable 'stringp)
+(put 'conda-env-name-for-buffer 'safe-local-variable 'stringp)
 
 ;; internal utility functions
 
@@ -94,12 +94,11 @@ environment variable."
   "Set the system \\[pdb] command."
   (setq gud-pdb-command-name conda-system-gud-pdb-command-name))
 
-(defun conda--env-dir-is-valid (potential-directory)
-  "Confirm that POTENTIAL-DIRECTORY is a valid conda environment."
-  (let* ((xp-path-dir (file-name-as-directory potential-directory))
-         (xp-bin (concat xp-path-dir conda-env-executables-dir))
-         (xp-bin-exists (file-exists-p xp-bin)))
-    (and potential-directory xp-bin-exists)))
+(defun conda--env-dir-is-valid (candidate)
+  "Confirm that CANDIDATE is a valid conda environment."
+  (and (not (s-blank? candidate))
+       (f-directory?
+        (concat (file-name-as-directory candidate) conda-env-executables-dir))))
 
 (defun conda--filter-blanks (items)
   "Remove empty string items from ITEMS."
@@ -107,23 +106,20 @@ environment variable."
    (lambda (p) (not (s-blank? p)))
    items))
 
-(defun conda--includes-path-element (env-location elem)
-  "Check whether ENV-LOCATION is in the path hierarchy of ELEM."
-  (not (s-contains? env-location elem)))
-
 (defun conda--purge-history (candidates)
   "Remove history candidates that are not in CANDIDATES."
   (setq conda-env-history
-        (-filter (lambda (s) (not (-contains? candidates s)))
-                 conda-env-history)))
+        (-filter (lambda (s) (-contains? candidates s))
+                 conda-env-history)) )
 
-(defun conda--get-env-name ()
+(defun conda--read-env-name ()
   "Read environment name, prompting appropriately whether an env is active now."
-  (let* ((current conda-env-current-name)
-         (prompt (if current
-                     (format "Choose a conda environment (currently %s): " current)
-                   "Choose a conda environment: ")))
-    (conda-env-read-name prompt)))
+  ;; TODO FEATURE: does this need to be inferred from the directory?
+  (conda-env-read-name
+   (format "Choose a conda environment%s: "
+           (if conda-env-current-name
+               (format " (currently %s)" conda-env-current-name)
+             ""))))
 
 (defun conda--check-executable ()
   "Verify there is a conda executable available, throwing an error if not."
@@ -134,18 +130,20 @@ environment variable."
     https://github.com/purcell/exec-path-from-shell for a robust solution to
     this problem")))
 
+(defun conda--contains-env-yml? (candidate)
+  (f-exists? (f-expand "environment.yml" candidate)))
+
 (defun conda--find-env-yml (dir)
   "Find an environment.yml in DIR or its parent directories."
   ;; TODO: implement an optimized finder with e.g. projectile?
-  (let* ((contains-env-yml-p (lambda (p)
-                               (f-exists? (f-expand "environment.yml" p))))
-         (containing-path (f-traverse-upwards contains-env-yml-p dir)))
+  (let ((containing-path (f-traverse-upwards conda--contains-env-yml? dir)))
     (if containing-path
         (f-expand "environment.yml" containing-path)
       nil)))
 
 (defun conda--get-name-from-env-yml (filename)
   "Pull the `name` property out of the YAML file at FILENAME."
+  ;; TODO: find a better way than slurping it in and using a regex...
   (when filename
     (let ((env-yml-contents (f-read-text filename)))
       (if (string-match "name:[ ]*\\([A-z0-9-_.]+\\)[ ]*$" env-yml-contents)
@@ -176,36 +174,43 @@ It's platform specific in that it uses the platform's native path separator."
 				     "bash")
 				   env-dir))))))
 
+;; "public" functions
+
 (defun conda-env-clear-history ()
   "Clear the history of conda environments that have been activated."
   (setq conda-env-history nil))
 
-(defun conda-env-location ()
-  "Default location of the conda environments."
-  (concat (file-name-as-directory conda-anaconda-home) conda-env-subdirectory))
+(defun conda-env-default-location ()
+  "Default location of the conda environments -- under the Anaconda installation."
+  (f-full (concat (file-name-as-directory conda-anaconda-home) conda-env-subdirectory)))
 
 (defun conda-env-name-to-dir (name)
-  "Translate NAME into the directory where the environment is located."
-  ;; TODO: if it's already a directory, and a valid environment, leave it be
-  (let* ((env-possibilities (list (conda-env-location))) ;; can add venv-location?
-         (potential-dirs (mapcar (lambda (x) (concat x "/" name))
-                                 env-possibilities))
-         (valid-dirs (-filter 'conda--env-dir-is-valid potential-dirs)))
-    (if (> (length valid-dirs) 0)
-        (expand-file-name (car valid-dirs))
+  "Translate NAME to the directory where the environment is located."
+  (let* ((default-location (file-name-as-directory (conda-env-default-location)))
+         (initial-possibilities (list name (concat default-location name)))
+         (possibilities (if (boundp 'venv-location)
+                            (if (stringp 'venv-location)
+                                (cons venv-location initial-possibilities)
+                              (nconc venv-location initial-possibilities))
+                            initial-possibilities))
+         (matches (-filter 'conda--env-dir-is-valid possibilities)))
+    (if (> (length matches) 0)
+        (expand-file-name (car matches))
       (error "No such conda environment: %s" name))))
 
 (defun conda-env-dir-to-name (dir)
   "Extract the name of a conda environment from DIR."
-  ;; TODO: only do this extraction if it's under the default envs dir
-  (let* ((pieces (split-string dir "/"))
-        (non-blank (conda--filter-blanks pieces)))
-    (car (last non-blank))))
+  ;; TODO FEATURE: only do this extraction if it's under the default envs dir
+  (if (f-ancestor-of? (conda-env-default-location) dir)
+      (let* ((pieces (f-split dir))
+             (non-blank (conda--filter-blanks pieces)))
+        (car (last non-blank)))
+    dir))
 
 (defun conda-env-candidates ()
   "Fetch all the candidate environments."
-  ;; TODO: include the current one if it's valid
-  (let ((candidates (conda-env-candidates-from-dir (conda-env-location))))
+  ;; TODO FEATURE: include the current one if it's valid
+  (let ((candidates (conda-env-candidates-from-dir (conda-env-default-location))))
     (when (not (eq (length (-distinct candidates))
                    (length candidates)))
       (error "Some envs have the same name!"))
@@ -225,13 +230,14 @@ It's platform specific in that it uses the platform's native path separator."
 
 (defun conda-env-stripped-path (path)
   "Strip PATH of anything inserted by the current environment."
-  ;; TODO: don't strip the root environment
-  (let* ((xp-location (expand-file-name (conda-env-location)))
-         (proper-location (file-name-as-directory xp-location)))
-    (-filter (lambda (p)
-	       (and (not (null p))
-		    (conda--includes-path-element proper-location p)))
-             path)))
+  (let ((current-env-entry (concat
+                            (file-name-as-directory
+                             (expand-file-name (conda-env-default-location)))
+                            conda-env-executables-dir))
+        (pieces (s-split path-separator path)))
+    (s-join path-separator (-filter (lambda (e)
+                                      (not (s-equals? current-env-entry e)))
+                                    pieces))))
 
 (defun conda-env-is-valid (name)
   "Check whether NAME points to a valid conda environment."
@@ -272,7 +278,7 @@ It's platform specific in that it uses the platform's native path separator."
 (defun conda-env-activate (&optional name)
   "Switch to environment NAME, prompting if called interactively."
   (interactive)
-  (let ((env-name (or name (conda--get-env-name))))
+  (let ((env-name (or name (conda--read-env-name))))
     (if (not (conda-env-is-valid env-name))
         (error "Invalid conda environment specified: %s" env-name)
       ;; first, deactivate any existing env
@@ -455,4 +461,5 @@ buffer."
     (advice-remove 'switch-to-buffer #'conda--switch-buffer-auto-activate)))
 
 (provide 'conda)
+
 ;;; conda.el ends here
