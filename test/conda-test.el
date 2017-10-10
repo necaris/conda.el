@@ -31,8 +31,6 @@
     (should (equal conda-env-history '("one" "two")))))
 
 (ert-deftest test-conda--read-env-name ()
-  ;; calls conda-env-read-name with info about current env, or not
-  ;; depending on value of conda-env-current-name
   (defvar test-conda-read-env-name-prompt nil)
   (cl-letf (((symbol-function 'conda-env-read-name)
              (lambda (prompt)
@@ -62,7 +60,17 @@
 
 ;; (ert-deftest test-conda-env-default-location
 
-;; (ert-deftest test-conda-env-name-to-dir)
+(ert-deftest test-conda-env-name-to-dir ()
+  ;; conda-env-default-location
+  ;; conda-env-dir-is-valid for dirs under the default location
+  (cl-letf (((symbol-function 'conda-env-default-location)
+             (lambda ()
+               "/home/user/envs"))
+            (conda-env-executables-dir "bin")
+            ((symbol-function 'f-directory?)
+             (lambda (dir)
+               (equal dir "/home/user/envs/sample/bin"))))
+   (should (equal (conda-env-name-to-dir "sample") "/home/user/envs/sample"))))
 
 ;; (ert-deftest test-conda-env-dir-to-name)
 
