@@ -1,4 +1,4 @@
-# conda.el
+# conda.el [![Build Status](https://travis-ci.org/necaris/conda.el.svg?branch=master)](https://travis-ci.org/necaris/conda.el)
 
 Emacs library for working with [conda environments](http://conda.pydata.org/docs/using/envs.html),
 largely ported from [virtualenvwrapper.el](https://github.com/porterjamesj/virtualenvwrapper.el).
