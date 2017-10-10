@@ -5,9 +5,10 @@
 ;; Here we pull in the actual code under test
 (require 'conda (f-expand "conda.el" (f-parent (f-dirname (f-this-file)))))
 
-;; (ert-deftest test-conda--set-env-gud-pdb-command-name)
+;; Not sure how to meaningfully test the below
 
-;; (ert-deftest test-conda--set-system-gud-pdb-command-name)
+; (ert-deftest test-conda--set-env-gud-pdb-command-name)
+; (ert-deftest test-conda--set-system-gud-pdb-command-name)
 
 (ert-deftest test-conda--filter-blanks ()
   (should (equal (conda--filter-blanks '("a" "" "c")) '("a" "c"))))
@@ -42,23 +43,31 @@
       (conda--read-env-name)
       (should (equal test-conda-read-env-name-prompt "Choose a conda environment: ")))))
 
-;; (ert-deftest test-conda--check-executable)
+(ert-deftest test-conda--check-executable ()
+   (should (= (+ 1 1) 1)))
 
-;; (ert-deftest test-conda--contains-env-yml-p)
+(ert-deftest test-conda--contains-env-yml-p ()
+   (should (= (+ 1 1) 1)))
 
-;; (ert-deftest test-conda--find-env-yml)
+(ert-deftest test-conda--find-env-yml ()
+   (should (= (+ 1 1) 1)))
 
-;; (ert-deftest test-conda--get-name-from-env-yml)
+(ert-deftest test-conda--get-name-from-env-yml ()
+   (should (= (+ 1 1) 1)))
 
-;; (ert-deftest test-conda--infer-env-from-buffer)
+(ert-deftest test-conda--infer-env-from-buffer ()
+   (should (= (+ 1 1) 1)))
 
-;; (ert-deftest test-conda--set-python-shell-virtualenv-var)
+(ert-deftest test-conda--set-python-shell-virtualenv-var ()
+   (should (= (+ 1 1) 1)))
 
 ;; ;; "public" functions
 
-;; (ert-deftest test-conda-env-clear-history)
+(ert-deftest test-conda-env-clear-history ()
+   (should (= (+ 1 1) 1)))
 
-;; (ert-deftest test-conda-env-default-location
+(ert-deftest test-conda-env-default-location ()
+   (should (= (+ 1 1) 1)))
 
 (ert-deftest test-conda-env-name-to-dir ()
   ;; conda-env-default-location
@@ -72,11 +81,14 @@
                (equal dir "/home/user/envs/sample/bin"))))
    (should (equal (conda-env-name-to-dir "sample") "/home/user/envs/sample"))))
 
-;; (ert-deftest test-conda-env-dir-to-name)
+(ert-deftest test-conda-env-dir-to-name ()
+   (should (= (+ 1 1) 1)))
 
-;; (ert-deftest test-conda-env-candidates)
+(ert-deftest test-conda-env-candidates ()
+   (should (= (+ 1 1) 1)))
 
-;; (ert-deftest test-conda-env-candidates-from-dir)
+(ert-deftest test-conda-env-candidates-from-dir ()
+   (should (= (+ 1 1) 1)))
 
 (ert-deftest test-conda-env-stripped-path ()
   (cl-letf (((symbol-function 'conda-env-default-location)
@@ -89,7 +101,8 @@
                     "/usr/bin:/usr/local/bin:/home/user/anaconda/bin")
                    "/usr/bin:/usr/local/bin:/home/user/anaconda/bin"))))
 
-;; (ert-deftest test-conda-env-is-valid)
+(ert-deftest test-conda-env-is-valid ()
+   (should (= (+ 1 1) 1)))
 
 (ert-deftest test-conda-env-read-name ()
   ;; TODO: test that it passes completing-read some sensible candidates, and
@@ -114,18 +127,23 @@
                     '("prompt" ("one" "two" "three") nil t nil conda-env-history "one"))))
   ))
 
-;; ;; potentially interactive user-exposed functions
+;; potentially interactive user-exposed functions
 
-;; ;; ;;;###autoload
-;; ;; (ert-deftest test-conda-env-deactivate)
+;;;;###autoload
+(ert-deftest test-conda-env-deactivate ()
+   (should (= (+ 1 1) 1)))
 
-;; ;; ;;;###autoload
-;; ;; (ert-deftest test-conda-env-activate)
+;;;;###autoload
+(ert-deftest test-conda-env-activate ()
+   (should (= (+ 1 1) 1)))
 
-;; ;; ;;;###autoload
-;; ;; (ert-deftest test-conda-env-initialize-eshell)
+;;;;###autoload
+(ert-deftest test-conda-env-initialize-eshell ()
+   (should (= (+ 1 1) 1)))
 
-;; ;; ;;;###autoload
-;; ;; (ert-deftest test-conda-env-activate-for-buffer ())
+;;;;###autoload
+(ert-deftest test-conda-env-activate-for-buffer ()
+   (should (= (+ 1 1) 1)))
 
-;; ;; (ert-deftest test-conda--switch-buffer-auto-activate)
+(ert-deftest test-conda--switch-buffer-auto-activate ()
+   (should (= (+ 1 1) 1)))
