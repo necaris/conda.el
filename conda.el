@@ -50,6 +50,9 @@ environment variable."
 (defcustom conda-env-subdirectory "envs"
   "Location of the environments subdirectory relative to ANACONDA_HOME.")
 
+(defcustom conda-message-on-environment-switch t
+  "Whether to message when switching environments. Default true.")
+
 ;; hooks -- TODO once we actually have environment creation / deletion
 
 (defcustom conda-preactivate-hook nil
@@ -281,7 +284,8 @@ environment variable."
         (setenv "VIRTUAL_ENV" env-dir)
         (conda--set-env-gud-pdb-command-name)
         (run-hooks 'conda-postactivate-hook)))
-      (message "Switched to conda environment: %s" env-name)))
+    (if (or conda-message-on-environment-switch (called-interactively-p 'interactive))
+	(message "Switched to conda environment: %s" env-name))))
 
 
 ;; for hilarious reasons to do with bytecompiling, this has to be here
@@ -393,7 +397,8 @@ This can be set by a buffer-local or project-local variable (e.g. a
                       conda-project-env-name
                     (conda--infer-env-from-buffer))))
     (if (not env-name)
-        (message "No conda environment for file <%s>" (buffer-file-name))
+      (if conda-message-on-environment-switch
+        (message "No conda environment for <%s>" (buffer-file-name)))
       (conda-env-activate env-name))))
 
 (defun conda--switch-buffer-auto-activate (&rest args)
