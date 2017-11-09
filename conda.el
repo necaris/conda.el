@@ -340,11 +340,15 @@ It's platform specific in that it uses the platform's native path separator."
   "Activate the current env in a newly opened shell PROCESS."
   (comint-send-string
    process
-   (concat "source activate " conda-env-current-name)))
+   (if (eq system-type 'windows-nt)
+       (concat "activate " conda-env-current-name "\n")
+     ;; should there be a newline for other systems too?
+     (concat "source activate " conda-env-current-name))))
 
 (defun conda--shell-strip-env (orig-fun &rest args)
   "Use the environment without env to start a new shell, passing ORIG-FUN ARGS."
-  (let* ((buffer-name (or buffer "*shell*"))
+  (let* ((buffer (car args))
+	 (buffer-name (or buffer "*shell*"))
            (buffer-exists-already (get-buffer buffer-name)))
       (if (or buffer-exists-already (not conda-env-current-name))
           (apply orig-fun args)
@@ -353,7 +357,7 @@ It's platform specific in that it uses the platform's native path separator."
                         path-separator
                         (conda-env-stripped-path (s-split path-separator (getenv "PATH")))))
                (setenv "VIRTUAL_ENV" nil)
-               ad-do-it
+               (apply orig-fun args)
                (conda-env-shell-init buffer-name)
                (setenv "PATH"
                        (concat
