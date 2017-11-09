@@ -338,12 +338,13 @@ It's platform specific in that it uses the platform's native path separator."
 ;;;###autoload
 (defun conda-env-shell-init (process)
   "Activate the current env in a newly opened shell PROCESS."
-  (comint-send-string
-   process
-   (if (eq system-type 'windows-nt)
-       (concat "activate " conda-env-current-name "\n")
-     ;; should there be a newline for other systems too?
-     (concat "source activate " conda-env-current-name))))
+  (let* ((activate-command (if (eq system-type 'windows-nt)
+			       '("activate")
+			     '("source" "activate")))
+	 (full-command (append activate-command `(,conda-env-current-name "\n")))
+	 (command-string (combine-and-quote-strings full-command)))
+    (comint-send-string process command-string)))
+
 
 (defun conda--shell-strip-env (orig-fun &rest args)
   "Use the environment without env to start a new shell, passing ORIG-FUN ARGS."
