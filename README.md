@@ -153,11 +153,12 @@ Just like `virtualenvwrapper.el`, no keybindings defined here. Do what you like!
 It's also common to want to have an environment automatically activated when you
 open a file in a certain project. This can be done with the `conda-env-autoactivate-mode`
 minor mode, which will:
-    - check for a [per-directory local variable](https://www.gnu.org/software/emacs/manual/html_node/emacs/Directory-Variables.html)
-      setting the `conda-project-env-name`
-    - search up the directory tree for a file defining a conda environment, such
-      as [an `environment.yml` file](http://conda.pydata.org/docs/using/envs.html#share-an-environment),
-      and try to activate the named environment
+
+  - check for a [per-directory local variable](https://www.gnu.org/software/emacs/manual/html_node/emacs/Directory-Variables.html)
+    setting the `conda-project-env-name`
+  - search up the directory tree for a file defining a conda environment, such
+    as [an `environment.yml` file](http://conda.pydata.org/docs/using/envs.html#share-an-environment),
+    and try to activate the named environment
 
 ### displaying the currently active environment on the mode line
 
