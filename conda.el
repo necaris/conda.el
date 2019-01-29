@@ -178,7 +178,7 @@ It's platform specific in that it uses the platform's native path separator."
 
 (defun conda-env-location ()
   "Location of the conda environments."
-  (concat (file-name-as-directory conda-anaconda-home) conda-env-subdirectory))
+  (concat (file-name-as-directory conda-env-home-directory) conda-env-subdirectory))
 
 (defun conda-env-name-to-dir (name)
   "Translate NAME into the directory where the environment is located."
