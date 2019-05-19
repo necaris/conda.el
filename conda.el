@@ -146,7 +146,7 @@ environment variable."
   "Pull the `name` property out of the YAML file at FILENAME."
   (when filename
     (let ((env-yml-contents (f-read-text filename)))
-      (if (string-match "name:[ ]*\\([A-z0-9-]+\\)[ ]*$" env-yml-contents)
+      (if (string-match "name:[ ]*\\([A-z0-9-_.]+\\)[ ]*$" env-yml-contents)
           (match-string 1 env-yml-contents)
         nil))))
 
