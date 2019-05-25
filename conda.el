@@ -1,9 +1,9 @@
 ;;; conda --- Work with your conda environments
 
-;; Copyright (C) 2016-2017 Rami Chowdhury
+;; Copyright (C) 2016-2019 Rami Chowdhury
 ;; Author: Rami Chowdhury <rami.chowdhury@gmail.com>
 ;; URL: http://github.com/necaris/conda.el
-;; Version: 0.2
+;; Version: 0.3
 ;; Keywords: python, environment, conda
 ;; Package-Requires: ((emacs "24.4") (pythonic "0.1.0") (dash "2.13.0") (s "1.11.0") (f "0.18.2"))
 
