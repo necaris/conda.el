@@ -339,6 +339,15 @@ It's platform specific in that it uses the platform's native path separator."
 ;;;###autoload
 (defun conda-env-shell-init (process)
   "Activate the current env in a newly opened shell PROCESS."
+
+(~~~~--***-this-probably-isn't-valid (
+  ;; IDEA IDEA IDEA -- use `conda shell.posix (or something else) activate ENV`
+  ;; which will return a list of commands, then go ahead and fire off those
+  ;; commands to activate the environment!
+  ;; ALSO, maybe we should be doing this anyway to activate the env, and
+  ;; track which env variables have changed and update their values?
+))
+
   (let* ((activate-command (if (eq system-type 'windows-nt)
 			       '("activate")
 			     '("source" "activate")))
