@@ -8,7 +8,9 @@ before_install:
   - cask install
 
 env:
-  - EVM_EMACS=emacs-24.5-travis
+  # TODO: this currently falls down installing `pythonic`, make it
+  # work again somehow
+  # - EVM_EMACS=emacs-24.5-travis
   - EVM_EMACS=emacs-25.3-travis
   - EVM_EMACS=emacs-26.2-travis
 script:
