@@ -268,6 +268,7 @@ It's platform specific in that it uses the platform's native path separator."
                   (conda-env-stripped-path
                    (s-split path-separator (getenv "PATH")))))
   (setenv "VIRTUAL_ENV" nil)
+  (setenv "CONDA_PREFIX" nil)
   (setq conda-env-current-name nil)
   (setq eshell-path-env (getenv "PATH"))
   (conda--set-system-gud-pdb-command-name)
@@ -309,6 +310,7 @@ It's platform specific in that it uses the platform's native path separator."
           (setenv "PATH" (concat path-prefix path-separator (getenv "PATH"))))
         (setq eshell-path-env (getenv "PATH"))
         (setenv "VIRTUAL_ENV" env-dir)
+        (setenv "CONDA_PREFIX" env-dir)
         (conda--set-env-gud-pdb-command-name)
         (run-hooks 'conda-postactivate-hook)))
     (if (or conda-message-on-environment-switch (called-interactively-p 'interactive))
@@ -415,7 +417,7 @@ It's platform specific in that it uses the platform's native path separator."
   (defun eshell/lsvirtualenv () (conda-env-list))
   ;; make completions work
   (conda--make-pcompletions ("activate"))
-  (message "Eshell virtualenv support initialized."))
+  (message "Eshell Conda environment support initialized."))
 
 ;;;###autoload
 (defun conda-env-activate-for-buffer ()
