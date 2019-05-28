@@ -336,6 +336,15 @@ It's platform specific in that it uses the platform's native path separator."
 
 ;; interactive shell
 
+;; TODO:
+- (detect shell in use)
+- (use `conda shell.{shell} activate ENV`, and / or `deactivate` in between)
+- (find a portable `printenv` to stick at the end of it)
+- (capture the `process-environment`)
+- (run the activate script, parse the `printenv` output, and just set things
+       to those values)
+- (then restore the captured process-environment on deactivate)
+
 ;;;###autoload
 (defun conda-env-shell-init (process)
   "Activate the current env in a newly opened shell PROCESS."
