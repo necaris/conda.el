@@ -237,7 +237,7 @@ It's platform specific in that it uses the platform's native path separator."
                             conda-env-executables-dir)))
     (s-join path-separator (-filter (lambda (e)
                                       (not (s-equals? current-env-entry e)))
-                                    path-elements)))
+                                    path-elements))))
 
 (defun conda-env-is-valid (name)
   "Check whether NAME points to a valid conda environment."
