@@ -229,12 +229,15 @@ It's platform specific in that it uses the platform's native path separator."
 				 conda-env-executables-dir)))))
 	       (directory-files proper-dir nil "^[^.]")))))
 
-(defun conda-env-stripped-path (path-elements)
+(defun conda-env-stripped-path (path-or-path-elements)
   "Strip PATH of anything inserted by the current environment."
   (let ((current-env-entry (concat
                             (file-name-as-directory
                              (expand-file-name (conda-env-default-location)))
-                            conda-env-executables-dir)))
+                            conda-env-executables-dir))
+        (path-elements (if (listp path-or-path-elements)
+                           path-or-path-elements
+                         (s-split path-separator path-or-path-elements))))
     (s-join path-separator (-filter (lambda (e)
                                       (not (s-equals? current-env-entry e)))
                                     path-elements))))
