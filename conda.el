@@ -1,4 +1,4 @@
-;;; conda --- Work with your conda environments
+;;; conda.el --- Work with your conda environments
 
 ;; Copyright (C) 2016-2019 Rami Chowdhury
 ;; Author: Rami Chowdhury <rami.chowdhury@gmail.com>
@@ -36,36 +36,53 @@
 
 The default location is ~/.anaconda3/, or read from the ANACONDA_HOME
 environment variable."
+  :type 'directory
   :group 'conda)
 
 (defcustom conda-system-gud-pdb-command-name
   (if (boundp 'gud-pdb-command-name)
       gud-pdb-command-name
     (setq gud-pdb-command-name "python -m pdb"))
-  "Whatever `gud-pdb-command-name' is (usually \\[pdb]).")
+  "Whatever `gud-pdb-command-name' is (usually \\[pdb])."
+  :type 'string
+  :group 'conda)
 
 (defcustom conda-env-home-directory conda-anaconda-home
-  "Location of the directory containing the environments directory.")
+  "Location of the directory containing the environments directory."
+  :type 'directory
+  :group 'conda)
 
 (defcustom conda-env-subdirectory "envs"
-  "Location of the environments subdirectory relative to `conda-anaconda-home`")
+  "Location of the environments subdirectory relative to `conda-anaconda-home`."
+  :type 'string
+  :group 'conda)
 
 (defcustom conda-message-on-environment-switch t
-  "Whether to message when switching environments. Default true.")
+  "Whether to message when switching environments. Default true."
+  :type 'boolean
+  :group 'conda)
 
 ;; hooks -- TODO once we actually have environment creation / deletion
 
 (defcustom conda-preactivate-hook nil
-  "Hook run before a conda environment is activated.")
+  "Hook run before a conda environment is activated."
+  :type 'hook
+  :group 'conda)
 
 (defcustom conda-postactivate-hook nil
-  "Hook run after a conda environment is activated.")
+  "Hook run after a conda environment is activated."
+  :type 'hook
+  :group 'conda)
 
 (defcustom conda-predeactivate-hook nil
-  "Hook run before a conda environment is deactivated.")
+  "Hook run before a conda environment is deactivated."
+  :type 'hook
+  :group 'conda)
 
 (defcustom conda-postdeactivate-hook nil
-  "Hook run after a conda environment is deactivated.")
+  "Hook run after a conda environment is deactivated."
+  :type 'hook
+  :group 'conda)
 
 ;; internal variables that you probably shouldn't mess with
 
