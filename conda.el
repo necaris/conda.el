@@ -183,7 +183,7 @@ It's platform specific in that it uses the platform's native path separator."
 
 (defun conda-env-default-location ()
   "Default location of the conda environments -- under the Anaconda installation."
-  (f-full (concat (file-name-as-directory conda-anaconda-home) conda-env-subdirectory)))
+  (f-full (concat (file-name-as-directory conda-env-home-directory) conda-env-subdirectory)))
 
 (defun conda-env-name-to-dir (name)
   "Translate NAME to the directory where the environment is located."
