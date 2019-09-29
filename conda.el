@@ -248,15 +248,16 @@ It's platform specific in that it uses the platform's native path separator."
 
 (defun conda-env-stripped-path (path-or-path-elements)
   "Strip PATH-OR-PATH-ELEMENTS of anything inserted by the current environment, returning a list of new path elements."
-  (let ((current-env-entry (concat
-                            (file-name-as-directory
-                             (expand-file-name (conda-env-default-location)))
-                            conda-env-executables-dir))
+  (let ((current-env-entry (concat (file-name-as-directory
+				    (concat (file-name-as-directory
+					     (expand-file-name (conda-env-default-location)))
+					    conda-env-current-name))
+				   conda-env-executables-dir))
         (path-elements (if (listp path-or-path-elements)
                            path-or-path-elements
                          (s-split path-separator path-or-path-elements))))
     (-filter (lambda (e)
-               (not (s-equals? current-env-entry e)))
+               (not (s-equals? current-env-entry (directory-file-name e))))
              path-elements)))
 
 (defun conda-env-is-valid (name)
