@@ -117,13 +117,15 @@
 (ert-deftest test-conda-env-stripped-path ()
   (cl-letf (((symbol-function 'conda-env-default-location)
              (lambda ()
-              "/home/user/sample")))
+	       "/home/user/sample"))
+	    (conda-env-executables-dir "bin")
+	    (conda-env-current-name "env-name"))
     (should (equal (conda-env-stripped-path
-                    "/usr/bin:/usr/local/bin:/home/user/sample/bin:/home/user/anaconda/bin")
-                   "/usr/bin:/usr/local/bin:/home/user/anaconda/bin"))
+                    "/usr/bin:/usr/local/bin:/home/user/sample/env-name/bin:/home/user/anaconda/bin")
+                   (list "/usr/bin" "/usr/local/bin" "/home/user/anaconda/bin")))
     (should (equal (conda-env-stripped-path
                     "/usr/bin:/usr/local/bin:/home/user/anaconda/bin")
-                   "/usr/bin:/usr/local/bin:/home/user/anaconda/bin"))))
+                   (list "/usr/bin" "/usr/local/bin" "/home/user/anaconda/bin")))))
 
 ;; (ert-deftest test-conda-env-is-valid ()
 ;;    (should (= (+ 1 1) 1)))
