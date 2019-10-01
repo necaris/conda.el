@@ -299,7 +299,6 @@ It's platform specific in that it uses the platform's native path separator."
     (run-hooks 'conda-predeactivate-hook)
     (conda--set-python-shell-virtualenv-var nil)
     (setq exec-path (conda-env-stripped-path exec-path))
-    (message "exec-path: %s" exec-path)
     (setenv "PATH" (s-join path-separator
 			   (conda-env-stripped-path
 			    (s-split path-separator (getenv "PATH")))))
@@ -356,7 +355,7 @@ It's platform specific in that it uses the platform's native path separator."
 (defun conda-env-activate-path (&optional path)
   "Switch to environment PATH, prompting if called interactively."
   (interactive)
-  (let ((env-path (or path (read-directory-name "choose directory of conda env: "))))
+  (let ((env-path (or path (read-directory-name "Conda environment directory: "))))
     (if (not (conda-env-is-valid-path env-path))
         (error "Invalid conda environment path specified: %s" env-path)
       ;; first, deactivate any existing env
