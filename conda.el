@@ -413,6 +413,18 @@ It's platform specific in that it uses the platform's native path separator."
          (command-string (combine-and-quote-strings full-command)))
     (comint-send-string process command-string)))
 
+;;;###autoload
+(defun conda-env-eshell-prompt ()
+  "An Eshell prompt function to insert the active Conda environment."
+  (concat
+   (when (and (boundp 'conda-env-current-name)
+              conda-env-current-name)
+     (concat "(" conda-env-current-name ") "))
+   (abbreviate-file-name (eshell/pwd))
+   (if (= (user-uid) 0)
+       " # "
+     " $ ")))
+
 (defun conda--shell-strip-env (orig-fun &rest args)
   "Use the environment without env to start a new shell, passing ORIG-FUN ARGS."
   (let* ((buffer (car args))
