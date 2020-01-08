@@ -209,7 +209,7 @@ It's platform specific in that it uses the platform's native path separator."
          (possibilities (if (boundp 'venv-location)
                             (if (stringp 'venv-location)
                                 (cons venv-location initial-possibilities)
-                              (nconc venv-location initial-possibilities))
+                              (nconc (list venv-location) initial-possibilities))
                             initial-possibilities))
          (matches (-filter 'conda--env-dir-is-valid possibilities)))
     (if (> (length matches) 0)
