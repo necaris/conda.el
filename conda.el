@@ -53,7 +53,7 @@ environment variable."
   :group 'conda)
 
 (defcustom conda-env-subdirectory "envs"
-  "Location of the environments subdirectory relative to `conda-anaconda-home`."
+  "Location of the environments subdirectory relative to `conda-env-home-directory`."
   :type 'string
   :group 'conda)
 
