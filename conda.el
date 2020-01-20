@@ -502,7 +502,7 @@ This can be set by a buffer-local or project-local variable (e.g. a
 `.dir-locals.el` that defines `conda-project-env-name`), or inferred from an
 `environment.yml` or similar at the project level."
   (interactive)
-  (let ((env-name (if conda-project-env-name
+  (let ((env-name (if (bound-and-true-p conda-project-env-name)
                       conda-project-env-name
                     (conda--infer-env-from-buffer))))
     (if (not env-name)
