@@ -31,10 +31,16 @@ largely ported from [virtualenvwrapper.el](https://github.com/porterjamesj/virtu
 
 * If your Anaconda installation is anywhere other than the default (`~/.anaconda3`)
   then set the `conda-anaconda-home` custom variable to the installation path. For
-  instance, in my configuration I have:
+  instance, if you installed miniconda via Homebrew on macOS, this should work:
   ```lisp
   (custom-set-variables
-   '(conda-anaconda-home "/path/to/my/Anaconda"))
+   '(conda-anaconda-home "/usr/local/Caskroom/miniconda/base/"))
+  ```
+  Also, if you have configured your Anaconda environment directory differently from the default
+  (i.e. _not_ relative to the Anaconda installation), you additionally need to set the 
+  `conda-env-home-directory`. For example, if it's at `~/anaconda3/envs`:
+  ```
+  (setq conda-env-home-directory (expand-file-name "~/anaconda3/envs"))
   ```
 
 * Use `M-x conda-env-activate` to activate conda environments and `M-x conda-env-deactivate`
