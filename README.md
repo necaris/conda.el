@@ -38,10 +38,22 @@ largely ported from [virtualenvwrapper.el](https://github.com/porterjamesj/virtu
   ```
   Also, if you have configured your Anaconda environment directory differently from the default
   (i.e. _not_ relative to the Anaconda installation), you additionally need to set the 
-  `conda-env-home-directory`. For example, if it's at `~/anaconda3/envs`:
+  `conda-env-home-directory`. For example, if it's at `~/anaconda3/` (while your main Anaconda
+  installation might be at `/opt/anaconda`):
   ```
-  (setq conda-env-home-directory (expand-file-name "~/anaconda3/envs"))
+  (setq conda-env-home-directory (expand-file-name "~/anaconda3/"))
   ```
+  Especially if you've changed from the default configuration, be sure to double-check that
+  your Conda _environments_ are correctly located. The default subdirectory is `envs`, so
+  if your `conda-env-home-directory` is `~/anaconda3` then by default environments will be looked
+  for in `~/anaconda3/envs`. You can change this with the `conda-env-subdirectory` setting:
+  ```
+  (setq 
+    conda-env-home-directory (expand-file-name "~/anaconda3/") ;; as in previous example; not required
+    conda-env-subdirectory "myenvs")
+  ```
+  Now environments will be searched for under `~/anaconda3/myenvs`.
+  
 
 * Use `M-x conda-env-activate` to activate conda environments and `M-x conda-env-deactivate`
   to deactivate them. You can also use `M-x conda-env-activate-for-buffer` to try
