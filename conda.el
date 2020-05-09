@@ -187,13 +187,18 @@ It's platform specific in that it uses the platform's native path separator."
   (s-trim
    (with-output-to-string
      (with-current-buffer standard-output
-       (process-file shell-file-name nil '(t nil) nil shell-command-switch
-                     (format "%s/bin/conda ..activate \"%s\" %s"
-                             conda-anaconda-home
-                             (if (eq system-type 'windows-nt)
-                                 "cmd.exe"
-                               "bash")
-                             env-dir))))))
+       (let* ((conda-executable-path
+               (concat (file-name-as-directory conda-anaconda-home) (file-name-as-directory "bin") "conda"))
+              (command "%s ..activate \"%s\" %s")
+              (formatted-command (format command
+                                         conda-executable-path
+                                         (if (eq system-type 'windows-nt)
+                                             "cmd.exe"
+                                           "bash")
+                                         env-dir))
+              (return-code (process-file shell-file-name nil '(t nil) nil shell-command-switch formatted-command)))
+         (unless (= 0 return-code)
+           (error (format "Error: executing command \"%s\" produced error code %d" formatted-command return-code))))))))
 
 ;; "public" functions
 
