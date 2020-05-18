@@ -188,8 +188,8 @@ It's platform specific in that it uses the platform's native path separator."
    (with-output-to-string
      (with-current-buffer standard-output
        (let* ((conda-executable-path
-               (concat (file-name-as-directory conda-anaconda-home) (file-name-as-directory "bin") "conda"))
-              (command "%s ..activate \"%s\" %s")
+               (concat (file-name-as-directory conda-anaconda-home) (file-name-as-directory conda-env-executables-dir) "conda"))
+              (command "\"%s\" ..activate \"%s\" \"%s\"")
               (formatted-command (format command
                                          conda-executable-path
                                          (if (eq system-type 'windows-nt)
