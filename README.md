@@ -9,6 +9,16 @@ largely ported from [virtualenvwrapper.el](https://github.com/porterjamesj/virtu
   aware of your conda environments
 * Detects and auto-activates the right conda environment for a particular
   buffer.
+  
+## running tests
+
+Using [`makem.sh`](https://github.com/alphapapa/makem.sh): 
+
+``` shell
+make v=v sandbox=/tmp install-deps=t test-ert
+```
+
+make v=v`
 
 ## basic usage
 
