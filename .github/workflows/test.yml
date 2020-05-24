@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    paths-ignore:
+      - "**.md"
+      - "tools/*"
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        emacs_version:
+          - 24.5
+          - 25.3
+          - 26.3
+          - snapshot
+        miniconda_version:
+          - 4.4.10
+          - 4.5.12
+          - 4.6.14
+          - 4.7.12
+          - latest
+    # env:
+    #   EMACS_LINT_IGNORE: ${{ matrix.lint_ignore }}
+    steps:
+      - uses: purcell/setup-emacs@master
+        if: matrix.os != 'windows-latest'
+        with:
+          version: ${{ matrix.emacs_version }}
+      - uses: crazy-max/ghaction-chocolatey@v1
+        if: matrix.os == 'windows-latest'
+        with:
+          args: install emacs
+      - uses: goanpeca/setup-miniconda@v1
+        with:
+          miniconda-version: ${{ matrix.miniconda_version }}
+          activate-environment: foo
+      - uses: actions/checkout@v1
+      - name: Initialize sandbox
+        if: matrix.os != 'windows-latest'
+        run: |
+          SANDBOX_DIR=$(mktemp -d) || exit 1
+          echo ::set-env name=SANDBOX_DIR::$SANDBOX_DIR
+          ./makem.sh -vv --sandbox=$SANDBOX_DIR --install-deps --install-linters
+      # The "all" rule is not used, because it treats compilation warnings
+      # as failures, so linting and testing are run as separate steps.
+      - name: Lint
+        continue-on-error: true
+        run: ./makem.sh -vv --sandbox=$SANDBOX_DIR lint
+      - name: Test
+        if: always() # Run test even if linting fails.
+        run: ./makem.sh -vv --sandbox=$SANDBOX_DIR test
