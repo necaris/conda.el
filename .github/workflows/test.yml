@@ -30,9 +30,13 @@ jobs:
       - name: create conda environment foo
         run: conda create -y -n foo python=3.6
       - uses: actions/checkout@v1
-      - name: install dependencies & run tests
+      - name: install dependencies
         run: |
-          emacs -Q --batch --load "test/run-tests.el"
+          emacs -Q --batch -L . --load "ci/deps.el" "test/run-tests.el"
+      - name: run tests
+        run: |
+          emacs -Q --batch -L . --load "test/conda-test.el" -f ert-run-tests-batch-and-exit
+
   test:
     runs-on: ${{ matrix.os }}
     strategy:

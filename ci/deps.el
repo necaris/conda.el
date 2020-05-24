@@ -1,4 +1,4 @@
-;;; run-tests --- run local tests in a script file, because Windows
+;;; deps --- Install `conda.el' and its dependencies in CI
 ;;; Commentary:
 ;;; - because none of the tooling to install dependencies, etc is
 ;;;   present for Windows
@@ -8,10 +8,8 @@
   (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/"))
   (package-initialize)
   (package-refresh-contents)
-  (mapc 'package-install '(pythonic dash s f ert-runner))
-  (load-file "conda.el")
-  (load-file "test/conda-test.el")
-  (ert-run-tests-batch-and-exit))
+  (package-install-file "conda.el"))
+  
 
-(provide 'run-tests)
-;;; run-tests ends here
+(provide 'deps)
+;;; deps ends here
