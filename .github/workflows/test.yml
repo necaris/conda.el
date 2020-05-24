@@ -58,8 +58,6 @@ jobs:
     # TODO: specify conda envs in an env var or something
     # env:
     steps:
-      - name: configure git because carriage returns on Windows
-        run: git config --global core.autocrlf false
       - uses: purcell/setup-emacs@master
         with:
           version: ${{ matrix.emacs_version }}
