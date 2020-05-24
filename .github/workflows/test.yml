@@ -67,15 +67,21 @@ jobs:
       - name: create conda environment foo
         run: conda create -y -n foo python=3.6
       - uses: actions/checkout@v1
-      - name: Initialize sandbox
+      - name: install dependencies
         run: |
-          SANDBOX_DIR=$(mktemp -d) || exit 1
-          echo ::set-env name=SANDBOX_DIR::$SANDBOX_DIR
-          ./makem.sh -vv --sandbox=$SANDBOX_DIR --install-deps --install-linters
-      # The "all" rule is not used, because it treats compilation warnings
-      # as failures, so linting and testing are run as separate steps.
-      - name: Lint
-        continue-on-error: true
-        run: ./makem.sh -vv --sandbox=$SANDBOX_DIR lint
-      - name: Test
-        run: ./makem.sh -vv --sandbox=$SANDBOX_DIR test
+          emacs -Q --batch -L . --load "ci/deps.el" "test/run-tests.el"
+      - name: run tests
+        run: |
+          emacs -Q --batch -L . --load "test/conda-test.el" -f ert-run-tests-batch-and-exit
+      # - name: Initialize sandbox
+      #   run: |
+      #     SANDBOX_DIR=$(mktemp -d) || exit 1
+      #     echo ::set-env name=SANDBOX_DIR::$SANDBOX_DIR
+      #     ./makem.sh -vv --sandbox=$SANDBOX_DIR --install-deps --install-linters
+      # # The "all" rule is not used, because it treats compilation warnings
+      # # as failures, so linting and testing are run as separate steps.
+      # - name: Lint
+      #   continue-on-error: true
+      #   run: ./makem.sh -vv --sandbox=$SANDBOX_DIR lint
+      # - name: Test
+      #   run: ./makem.sh -vv --sandbox=$SANDBOX_DIR test
