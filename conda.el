@@ -199,7 +199,7 @@ It's platform specific in that it uses the platform's native path separator."
                                env-dir))
               (return-code (process-file shell-file-name nil '(t nil) nil shell-command-switch command)))
          (unless (= 0 return-code)
-           (error (format "Error: executing command \"%s\" produced error code %d" formatted-command return-code))))))))
+           (error (format "Error: executing command \"%s\" produced error code %d" command return-code))))))))
 
 ;; "public" functions
 
