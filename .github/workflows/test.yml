@@ -1,21 +1,36 @@
 name: CI
 
 on:
-  pull_request:
-  push:
-    paths-ignore:
-      - "**.md"
-      - "tools/*"
+  - push
+  # pull_request:
+  # push:
+  #   paths-ignore:
+  #     - "**.md"
+  #     - "tools/*"
 
 jobs:
-  build:
+  test-on-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: install emacs
+      - uses: goanpeca/setup-miniconda@v1
+        with:
+          miniconda-version: latest
+      - name: create conda environment foo
+        run: conda create -y -n foo python=3.6
+      - uses: actions/checkout@v1
+      - name: install dependencies & run tests
+        run: |
+          emacs -Q --batch --load "test/run-tests.el"
+  test:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os:
           - ubuntu-latest
           # - macos-latest
-          - windows-latest
         emacs_version:
           # - 24.5
           # - 25.3
@@ -27,18 +42,12 @@ jobs:
           # - 4.6.14
           # - 4.7.12
           - latest
-    env:
-      EMACS_LINT_IGNORE: ${{ matrix.lint_ignore }}
-      # TODO: specify conda envs in an env var or something
+    # TODO: specify conda envs in an env var or something
+    # env:
     steps:
       - uses: purcell/setup-emacs@master
-        if: matrix.os != 'windows-latest'
         with:
           version: ${{ matrix.emacs_version }}
-      - uses: crazy-max/ghaction-chocolatey@v1
-        if: matrix.os == 'windows-latest'
-        with:
-          args: install emacs
       - uses: goanpeca/setup-miniconda@v1
         with:
           miniconda-version: ${{ matrix.miniconda_version }}
@@ -46,7 +55,6 @@ jobs:
         run: conda create -y -n foo python=3.6
       - uses: actions/checkout@v1
       - name: Initialize sandbox
-        if: matrix.os != 'windows-latest'
         run: |
           SANDBOX_DIR=$(mktemp -d) || exit 1
           echo ::set-env name=SANDBOX_DIR::$SANDBOX_DIR
@@ -54,13 +62,7 @@ jobs:
       # The "all" rule is not used, because it treats compilation warnings
       # as failures, so linting and testing are run as separate steps.
       - name: Lint
-        if: matrix.os != 'windows-latest'
         continue-on-error: true
         run: ./makem.sh -vv --sandbox=$SANDBOX_DIR lint
       - name: Test
-        if: matrix.os != 'windows-latest'
         run: ./makem.sh -vv --sandbox=$SANDBOX_DIR test
-      - name: install dependencies & run tests for windows
-        if: matrix.os == 'windows-latest'
-        run: |
-          emacs -Q --batch --load "test/run-tests.el"
