@@ -5,6 +5,15 @@
 ;; Here we pull in the actual code under test
 (require 'conda (f-expand "conda.el" (f-parent (f-dirname (f-this-file)))))
 
+;; Rudimentary test to get us going
+(ert-deftest test-conda-env-list ()
+  (setq conda-anaconda-home "/usr/share/miniconda3")
+  (setq conda-env-home-directory "/usr/share/miniconda3")
+  (should
+   (equal
+    (conda-env-candidates)
+    '("foo"))))
+
 ;; Not sure how to meaningfully test the below
 
 ; (ert-deftest test-conda--set-env-gud-pdb-command-name)
