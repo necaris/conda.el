@@ -30,7 +30,7 @@ jobs:
       - name: create conda environment foo
         run: conda create -y -n foo python=3.6
       - uses: actions/checkout@v1
-      - name: install dependencies
+      - name: install dependencies & run tests
         run: >-
           emacs -Q --batch -L .
           --load "ci/deps.el"
@@ -67,7 +67,7 @@ jobs:
       - name: create conda environment foo
         run: conda create -y -n foo python=3.6
       - uses: actions/checkout@v1
-      - name: install dependencies
+      - name: install dependencies & run tests
         run: >-
           emacs -Q --batch -L .
           --load "ci/deps.el"
