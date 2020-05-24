@@ -14,21 +14,21 @@ jobs:
     env:
       CACHE_NUM: 0
     steps:
-      - uses: actions/cache@v1
-        with:
-          path: C:\Temp\Choco
-          key: ${{ env.CACHE_NUM }}
-      - uses: crazy-max/ghaction-chocolatey@v1
-        with:
-          args: config set cacheLocation C:\Temp\Choco
+      # - uses: actions/cache@v1
+      #   with:
+      #     path: C:\Temp\Choco
+      #     key: ${{ env.CACHE_NUM }}
+      # - uses: crazy-max/ghaction-chocolatey@v1
+      #   with:
+      #     args: config set cacheLocation C:\Temp\Choco
       - uses: crazy-max/ghaction-chocolatey@v1
         with:
           args: install emacs
-      - uses: goanpeca/setup-miniconda@v1
-        with:
-          miniconda-version: latest
-      - name: create conda environment foo
-        run: conda create -y -n foo python=3.6
+      # - uses: goanpeca/setup-miniconda@v1
+      #   with:
+      #     miniconda-version: latest
+      # - name: create conda environment foo
+      #   run: conda create -y -n foo python=3.6
       - uses: actions/checkout@v1
       - name: install dependencies & run tests
         run: >-
@@ -43,17 +43,17 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
-          - macos-latest
+          # - macos-latest
         emacs_version:
-          - 24.5
-          - 25.3
+          # - 24.5
+          # - 25.3
           - 26.3
-          - snapshot
+          # - snapshot
         miniconda_version:
           # - 4.4.10
-          - 4.5.12
-          - 4.6.14
-          - 4.7.12
+          # - 4.5.12
+          # - 4.6.14
+          # - 4.7.12
           - latest
     # TODO: specify conda envs in an env var or something
     # env:
