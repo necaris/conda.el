@@ -11,7 +11,16 @@ on:
 jobs:
   test-on-windows:
     runs-on: windows-latest
+    env:
+      CACHE_NUM: 0
     steps:
+      - uses: actions/cache@v1
+        with:
+          path: C:\Temp\Choco
+          key: ${{ env.CACHE_NUM }}
+      - uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: config set cacheLocation C:\Temp\Choco
       - uses: crazy-max/ghaction-chocolatey@v1
         with:
           args: install emacs
