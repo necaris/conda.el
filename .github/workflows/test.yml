@@ -2,11 +2,6 @@ name: CI
 
 on:
   - push
-  # pull_request:
-  # push:
-  #   paths-ignore:
-  #     - "**.md"
-  #     - "tools/*"
 
 jobs:
   test-on-windows:
@@ -14,6 +9,7 @@ jobs:
     env:
       CACHE_NUM: 0
     steps:
+      # TODO: figure this out, add caching to all steps
       # - uses: actions/cache@v1
       #   with:
       #     path: C:\Temp\Choco
@@ -24,11 +20,11 @@ jobs:
       - uses: crazy-max/ghaction-chocolatey@v1
         with:
           args: install emacs
-      # - uses: goanpeca/setup-miniconda@v1
-      #   with:
-      #     miniconda-version: latest
-      # - name: create conda environment foo
-      #   run: conda create -y -n foo python=3.6
+      - uses: goanpeca/setup-miniconda@v1
+        with:
+          miniconda-version: latest
+      - name: create conda environment foo
+        run: conda create -y -n foo python=3.6
       - uses: actions/checkout@v1
       - name: install dependencies & run tests
         run: >-
@@ -75,6 +71,7 @@ jobs:
           --load "conda.el"
           --load "test/conda-test.el"
           -f ert-run-tests-batch-and-exit
+      # TODO: restore
       # - name: Initialize sandbox
       #   run: |
       #     SANDBOX_DIR=$(mktemp -d) || exit 1
