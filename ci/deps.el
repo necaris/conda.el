@@ -8,7 +8,8 @@
   (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/"))
   (package-initialize)
   (package-refresh-contents)
-  (package-install-file "conda.el"))
+  (mapc 'package-install '(pythonic dash s f)))
+
   
 
 (provide 'deps)

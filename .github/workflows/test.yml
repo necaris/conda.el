@@ -34,6 +34,7 @@ jobs:
         run: >-
           emacs -Q --batch -L .
           --load "ci/deps.el"
+          --load "conda.el"
           --load "test/conda-test.el"
           -f ert-run-tests-batch-and-exit
 
@@ -71,6 +72,7 @@ jobs:
         run: >-
           emacs -Q --batch -L .
           --load "ci/deps.el"
+          --load "conda.el"
           --load "test/conda-test.el"
           -f ert-run-tests-batch-and-exit
       # - name: Initialize sandbox
