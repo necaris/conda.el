@@ -1,5 +1,6 @@
-# conda.el [![Build Status](https://travis-ci.org/necaris/conda.el.svg?branch=master)](https://travis-ci.org/necaris/conda.el) [![MELPA](http://melpa.milkbox.net/packages/conda-badge.svg)](http://melpa.milkbox.net/#/conda)
- 
+# conda.el 
+[![Build Status](https://github.com/necaris/conda.el/workflows/CI/badge.svg)](https://github.com/necaris/conda.el/actions?query=workflow%3ACI) [![MELPA](http://melpa.milkbox.net/packages/conda-badge.svg)](http://melpa.milkbox.net/#/conda)
+
 Emacs library for working with [conda environments](http://conda.pydata.org/docs/using/envs.html),
 largely ported from [virtualenvwrapper.el](https://github.com/porterjamesj/virtualenvwrapper.el).
 
