@@ -4,6 +4,7 @@
 ;; Author: Rami Chowdhury <rami.chowdhury@gmail.com>
 ;; URL: http://github.com/necaris/conda.el
 ;; Version: 0.4
+;; Package-Version: 0.4
 ;; Keywords: python, environment, conda
 ;; Package-Requires: ((emacs "24.4") (pythonic "0.1.0") (dash "2.13.0") (s "1.11.0") (f "0.18.2"))
 
@@ -199,7 +200,7 @@ It's platform specific in that it uses the platform's native path separator."
                                env-dir))
               (return-code (process-file shell-file-name nil '(t nil) nil shell-command-switch command)))
          (unless (= 0 return-code)
-           (error (format "Error: executing command \"%s\" produced error code %d" formatted-command return-code))))))))
+           (error (format "Error: executing command \"%s\" produced error code %d" command return-code))))))))
 
 ;; "public" functions
 
