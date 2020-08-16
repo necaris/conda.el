@@ -212,32 +212,39 @@ It's platform specific in that it uses the platform's native path separator."
 
 (defun conda-env-name-to-dir (name)
   "Translate NAME to the directory where the environment is located."
-  (let* ((default-location (file-name-as-directory (conda-env-default-location)))
-         (initial-possibilities (list name (concat default-location name)))
-         (possibilities (if (boundp 'venv-location)
-                            (if (stringp 'venv-location)
-                                (cons venv-location initial-possibilities)
-                              (nconc venv-location initial-possibilities))
+  (if (and (string= name "base")
+           (conda--env-dir-is-valid conda-anaconda-home))
+      (file-name-as-directory (expand-file-name conda-anaconda-home))
+    (let* ((default-location (file-name-as-directory (conda-env-default-location)))
+           (initial-possibilities (list name (concat default-location name)))
+           (possibilities (if (boundp 'venv-location)
+                              (if (stringp 'venv-location)
+                                  (cons venv-location initial-possibilities)
+                                (nconc venv-location initial-possibilities))
                             initial-possibilities))
-         (matches (-filter 'conda--env-dir-is-valid possibilities)))
-    (if (> (length matches) 0)
-        (file-name-as-directory (expand-file-name (car matches)))
-      (error "No such conda environment: %s" name))))
+           (matches (-filter 'conda--env-dir-is-valid possibilities)))
+      (if (> (length matches) 0)
+          (file-name-as-directory (expand-file-name (car matches)))
+        (error "No such conda environment: %s" name)))))
 
 (defun conda-env-dir-to-name (dir)
   "Extract the name of a conda environment from DIR."
   ;; TODO FEATURE: only do this extraction if it's under the default envs dir
-  (if (f-ancestor-of? (conda-env-default-location) dir)
-      (let* ((pieces (f-split dir))
-             (non-blank (conda--filter-blanks pieces)))
-        (car (last non-blank)))
-    dir))
+  (cond ((file-equal-p dir conda-anaconda-home) "base")
+        ((f-ancestor-of? (conda-env-default-location) dir)
+         (let* ((pieces (f-split dir))
+                (non-blank (conda--filter-blanks pieces)))
+           (car (last non-blank))))
+        (t dir)))
 
 (defun conda-env-candidates ()
   "Fetch all the candidate environments."
   ;; TODO FEATURE: include the current one if it's valid
   (let ((candidates (conda-env-candidates-from-dir (conda-env-default-location))))
-    ;; (candidates wow)
+    ;; Add 'base' env to candidates list, which corresponds to
+    ;; `conda-anaconda-home' path.
+    (when (conda-env-is-valid-path conda-anaconda-home)
+      (push "base" candidates))
     (when (not (eq (length (-distinct candidates))
                    (length candidates)))
       (error "Some envs have the same name!"))
