@@ -243,7 +243,7 @@ It's platform specific in that it uses the platform's native path separator."
   (let ((candidates (conda-env-candidates-from-dir (conda-env-default-location))))
     ;; Add 'base' env to candidates list, which corresponds to
     ;; `conda-anaconda-home' path.
-    (when (conda-env-is-valid-path conda-anaconda-home)
+    (when (conda--env-dir-is-valid conda-anaconda-home)
       (push "base" candidates))
     (when (not (eq (length (-distinct candidates))
                    (length candidates)))
@@ -273,16 +273,6 @@ It's platform specific in that it uses the platform's native path separator."
     (-filter (lambda (e)
                (not (s-equals? current-env-entry (directory-file-name e))))
              path-elements)))
-
-(defun conda-env-is-valid-path (path)
-  "Check whether in PATH is a valid conda environment."
-  (let ((python-binary-path (concat (file-name-as-directory (expand-file-name path))
-				     (file-name-as-directory conda-env-executables-dir)
-				     (if (eq system-type 'windows-nt)
-					 "python.exe"
-				       "python"
-				       ))))
-    (f-executable? python-binary-path)))
 
 (defun conda-env-read-name (prompt)
   "Do a completing read to get a candidate name, prompting with PROMPT."
@@ -330,7 +320,7 @@ It's platform specific in that it uses the platform's native path separator."
   "Switch to environment PATH, prompting if called interactively."
   (interactive)
   (let ((env-path (or path (read-directory-name "Conda environment directory: "))))
-    (if (not (conda-env-is-valid-path env-path))
+    (if (not (conda--env-dir-is-valid env-path))
         (error "Invalid conda environment path specified: %s" env-path)
       ;; first, deactivate any existing env
       (conda-env-deactivate)
