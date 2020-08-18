@@ -89,6 +89,8 @@ environment variable."
 
 (defvar conda-env-history nil "The history of conda envs we have worked on.")
 
+(defvar conda-env-current-name nil "Name of current conda env.")
+
 (defvar conda-env-current-path nil "Path of current conda env.")
 
 (defvar conda-env-executables-dir  ;; copied from virtualenv.el
@@ -133,8 +135,8 @@ environment variable."
   ;; TODO FEATURE: does this need to be inferred from the directory?
   (conda-env-read-name
    (format "Choose a conda environment%s: "
-           (if conda-env-current-path
-               (format " (currently %s)" conda-env-current-path)
+           (if conda-env-current-name
+               (format " (currently %s)" conda-env-current-name)
              ""))))
 
 (defun conda--check-executable ()
@@ -311,6 +313,7 @@ It's platform specific in that it uses the platform's native path separator."
     (setenv "VIRTUAL_ENV" nil)
     (setenv "CONDA_PREFIX" nil)
     (setq conda-env-current-path nil)
+    (setq conda-env-current-name nil)
     (setq eshell-path-env (getenv "PATH"))
     (conda--set-system-gud-pdb-command-name)
     (run-hooks 'conda-postdeactivate-hook)
@@ -338,11 +341,12 @@ It's platform specific in that it uses the platform's native path separator."
       ;; a buffer-local variable that allows us to skip discovery when we
       ;; switch back into the buffer.
       (setq conda-env-current-path env-path)
+      (setq conda-env-current-name (conda-env-dir-to-name env-path))
       (set (make-local-variable 'conda-project-env-path) env-path)
       ;; run hooks
       (run-hooks 'conda-preactivate-hook)
       ;; push it onto the history
-      (add-to-list 'conda-env-history conda-env-current-path)
+      (add-to-list 'conda-env-history conda-env-current-name)
       (let* ((env-dir (expand-file-name env-path))
 	     (env-exec-dir (concat (file-name-as-directory env-dir)
                                    conda-env-executables-dir)))
@@ -406,7 +410,7 @@ It's platform specific in that it uses the platform's native path separator."
   (let* ((activate-command (if (eq system-type 'windows-nt)
 			       '("activate")
 			     '("source" "activate")))
-	 (full-command (append activate-command `(,conda-env-current-path "\n")))
+	 (full-command (append activate-command `(,conda-env-current-name "\n")))
 	 (command-string (combine-and-quote-strings full-command)))
     (comint-send-string process command-string)))
 
@@ -427,8 +431,7 @@ It's platform specific in that it uses the platform's native path separator."
                (conda-env-shell-init buffer-name)
                (setenv "PATH"
                        (concat
-                        (file-name-as-directory
-                         conda-env-current-path)
+                        (file-name-as-directory conda-env-current-path)
                         conda-env-executables-dir
                         path-separator
                         (getenv "PATH")))
