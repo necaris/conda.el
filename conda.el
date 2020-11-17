@@ -479,7 +479,7 @@ This can be set by a buffer-local or project-local variable (e.g. a
 (defun conda--switch-buffer-auto-activate (&rest args)
   "Add conda env activation if a buffer has a file, handling ARGS."
   (let ((filename (buffer-file-name)))
-  (when filename
+  (when (and filename (equal major-mode 'python-mode))
     ; (message "switch-buffer auto-activating on <%s>" filename)
     (with-demoted-errors "Error: %S"
       (conda-env-activate-for-buffer)))))
