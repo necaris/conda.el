@@ -495,20 +495,21 @@ This can be set by a buffer-local or project-local variable (e.g. a
 
 This mode automatically tries to activate a conda environment for the current
 buffer."
-    ;; The initial value.
-    nil
-    ;; The indicator for the mode line.
-    nil
-    ;; The minor mode bindings.
-    nil
-    ;; Kwargs
-    :group 'conda
-    :global t
-    ;; Forms
-    (if conda-env-autoactivate-mode ;; already on, now switching off
-        (advice-add 'switch-to-buffer :after #'conda--switch-buffer-auto-activate)
-      (advice-remove 'switch-to-buffer #'conda--switch-buffer-auto-activate)))
+  ;; The initial value.
+  nil
+  ;; The indicator for the mode line.
+  nil
+  ;; The minor mode bindings.
+  nil
+  ;; Kwargs
+  :group 'conda
+  :global t
+  ;; Forms
+  (if conda-env-autoactivate-mode ;; already on, now switching off
+      (advice-add 'pop-to-buffer :after #'conda--switch-buffer-auto-activate)
+    (advice-remove 'pop-to-buffer #'conda--switch-buffer-auto-activate)))
 
-  (provide 'conda))
+(provide 'conda)
+
 
 ;;; conda.el ends here
