@@ -404,94 +404,93 @@ It's platform specific in that it uses the platform's native path separator."
   ;; Do we need to `eval' the conda activation script every time?
   (let* ((activate-command (if (eq system-type 'windows-nt
                                    '("activate")
-                                   '("conda" "activate")))
-                           (full-command (append activate-command `(,conda-env-current-name "\n")))
-                           (command-string (combine-and-quote-strings full-command)))
-         (comint-send-string process command-string)))
+                                   '("conda" "activate"))))
+         (full-command (append activate-command `(,conda-env-current-name "\n")))
+         (command-string (combine-and-quote-strings full-command)))
+    (comint-send-string process command-string)))
 
-
-  (defun conda--shell-strip-env (orig-fun &rest args)
-    "Use the environment without env to start a new shell, passing ORIG-FUN ARGS."
-    (let* ((buffer (car args))
-           (buffer-name (or buffer "*shell*"))
-           (buffer-exists-already (get-buffer buffer-name)))
-      (if (or buffer-exists-already (not conda-env-current-path))
-          (apply orig-fun args)
-        (progn (setenv "PATH"
-                       (s-join
-                        path-separator
-                        (conda-env-stripped-path (s-split path-separator (getenv "PATH")))))
-               (setenv "VIRTUAL_ENV" nil)
-               (apply orig-fun args)
-               (conda-env-shell-init buffer-name)
-               (setenv "PATH"
-                       (concat
-                        (file-name-as-directory conda-env-current-path)
-                        conda-env-executables-dir
-                        path-separator
-                        (getenv "PATH")))
-               (setenv "VIRTUAL_ENV" conda-env-current-path)))))
-
-;;;###autoload
-  (defun conda-env-initialize-interactive-shells ()
-    "Configure interactive shells for use with conda.el."
-    (advice-add 'shell :around #'conda--shell-strip-env))
-
-  ;; eshell
-
-  (eval-and-compile
-    (defun conda--gen-fun (command)
-      `(defun ,(intern (format "pcomplete/eshell-mode/%s" command)) ()
-         (pcomplete-here* (conda-env-candidates)))))
-
-  (defmacro conda--make-pcompletions (commands)
-    "Make eshell pcompletions for COMMANDS."
-    `(progn ,@(-map #'conda--gen-fun commands)))
+(defun conda--shell-strip-env (orig-fun &rest args)
+  "Use the environment without env to start a new shell, passing ORIG-FUN ARGS."
+  (let* ((buffer (car args))
+         (buffer-name (or buffer "*shell*"))
+         (buffer-exists-already (get-buffer buffer-name)))
+    (if (or buffer-exists-already (not conda-env-current-path))
+        (apply orig-fun args)
+      (progn (setenv "PATH"
+                     (s-join
+                      path-separator
+                      (conda-env-stripped-path (s-split path-separator (getenv "PATH")))))
+             (setenv "VIRTUAL_ENV" nil)
+             (apply orig-fun args)
+             (conda-env-shell-init buffer-name)
+             (setenv "PATH"
+                     (concat
+                      (file-name-as-directory conda-env-current-path)
+                      conda-env-executables-dir
+                      path-separator
+                      (getenv "PATH")))
+             (setenv "VIRTUAL_ENV" conda-env-current-path)))))
 
 ;;;###autoload
-  (defun conda-env-initialize-eshell ()
-    "Configure eshell for use with conda.el."
-    ;; make emacs and eshell share an environment
-    (setq eshell-modify-global-environment t)
-    ;; set eshell path
-    (setq eshell-path-env (getenv "PATH"))
-    ;; alias functions
-    (defun eshell/activate (arg) (conda-env-activate arg))
-    (defun eshell/deactivate () (conda-env-deactivate))
-    ;; (defun eshell/rmvirtualenv (&rest args) (apply #'conda-env-rmvirtualenv args))
-    ;; (defun eshell/mkvirtualenv (&rest args) (apply #'conda-env-mkvirtualenv args))
-    (defun eshell/lsvirtualenv () (conda-env-list))
-    ;; make completions work
-    (conda--make-pcompletions ("activate"))
-    (message "Eshell Conda environment support initialized."))
+(defun conda-env-initialize-interactive-shells ()
+  "Configure interactive shells for use with conda.el."
+  (advice-add 'shell :around #'conda--shell-strip-env))
+
+;; eshell
+
+(eval-and-compile
+  (defun conda--gen-fun (command)
+    `(defun ,(intern (format "pcomplete/eshell-mode/%s" command)) ()
+       (pcomplete-here* (conda-env-candidates)))))
+
+(defmacro conda--make-pcompletions (commands)
+  "Make eshell pcompletions for COMMANDS."
+  `(progn ,@(-map #'conda--gen-fun commands)))
 
 ;;;###autoload
-  (defun conda-env-activate-for-buffer ()
-    "Activate the conda environment implied by the current buffer.
+(defun conda-env-initialize-eshell ()
+  "Configure eshell for use with conda.el."
+  ;; make emacs and eshell share an environment
+  (setq eshell-modify-global-environment t)
+  ;; set eshell path
+  (setq eshell-path-env (getenv "PATH"))
+  ;; alias functions
+  (defun eshell/activate (arg) (conda-env-activate arg))
+  (defun eshell/deactivate () (conda-env-deactivate))
+  ;; (defun eshell/rmvirtualenv (&rest args) (apply #'conda-env-rmvirtualenv args))
+  ;; (defun eshell/mkvirtualenv (&rest args) (apply #'conda-env-mkvirtualenv args))
+  (defun eshell/lsvirtualenv () (conda-env-list))
+  ;; make completions work
+  (conda--make-pcompletions ("activate"))
+  (message "Eshell Conda environment support initialized."))
+
+;;;###autoload
+(defun conda-env-activate-for-buffer ()
+  "Activate the conda environment implied by the current buffer.
 
 This can be set by a buffer-local or project-local variable (e.g. a
 `.dir-locals.el` that defines `conda-project-env-path`), or inferred from an
 `environment.yml` or similar at the project level."
-    (interactive)
-    (let ((env-name-path (if (bound-and-true-p conda-project-env-path)
-                             conda-project-env-path
-                           (conda-env-name-to-dir (conda--infer-env-from-buffer)))))
-      (if (not env-name-path)
-          (if conda-message-on-environment-switch
-              (message "No conda environment for <%s>" (buffer-file-name)))
-        (conda-env-activate env-name-path))))
+  (interactive)
+  (let ((env-name-path (if (bound-and-true-p conda-project-env-path)
+                           conda-project-env-path
+                         (conda-env-name-to-dir (conda--infer-env-from-buffer)))))
+    (if (not env-name-path)
+        (if conda-message-on-environment-switch
+            (message "No conda environment for <%s>" (buffer-file-name)))
+      (conda-env-activate env-name-path))))
 
-  (defun conda--switch-buffer-auto-activate (&rest args)
-    "Add conda env activation if a buffer has a file, handling ARGS."
-    (let ((filename (buffer-file-name)))
-      (when filename
+(defun conda--switch-buffer-auto-activate (&rest args)
+  "Add conda env activation if a buffer has a file, handling ARGS."
+  (let ((filename (buffer-file-name)))
+    (when filename
                                         ; (message "switch-buffer auto-activating on <%s>" filename)
-        (with-demoted-errors "Error: %S"
-          (conda-env-activate-for-buffer)))))
+      (with-demoted-errors "Error: %S"
+        (conda-env-activate-for-buffer)))))
 
 ;;;###autoload
-  (define-minor-mode conda-env-autoactivate-mode
-    "Toggle conda-env-autoactivate mode.
+(define-minor-mode conda-env-autoactivate-mode
+  "Toggle conda-env-autoactivate mode.
 
 This mode automatically tries to activate a conda environment for the current
 buffer."
@@ -506,10 +505,9 @@ buffer."
   :global t
   ;; Forms
   (if conda-env-autoactivate-mode ;; already on, now switching off
-      (advice-add 'pop-to-buffer :after #'conda--switch-buffer-auto-activate)
-    (advice-remove 'pop-to-buffer #'conda--switch-buffer-auto-activate)))
+      (advice-add 'switch-to-buffer :after #'conda--switch-buffer-auto-activate)
+    (advice-remove 'switch-to-buffer #'conda--switch-buffer-auto-activate)))
 
 (provide 'conda)
-
 
 ;;; conda.el ends here
