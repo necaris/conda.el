@@ -193,7 +193,7 @@ It's platform specific in that it uses the platform's native path separator."
                  (concat (file-name-as-directory conda-anaconda-home-tmp)
                          (file-name-as-directory conda-env-executables-dir)
                          "conda"))
-                (command-format-string "\"%s\" ..activate \"%s\" \"%s\"")
+                (command-format-string "%s ..activate \"%s\" \"%s\"")
                 (executor (if (eq system-type 'windows-nt) "cmd.exe" "bash"))
                 (command (format command-format-string
                                  conda-executable-path
