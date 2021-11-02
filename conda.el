@@ -402,9 +402,9 @@ It's platform specific in that it uses the platform's native path separator."
   ;; check the Conda version and cache it?
   ;; TODO: make sure the shell has been set up for `conda activate`!
   ;; Do we need to `eval' the conda activation script every time?
-  (let* ((activate-command (if (eq system-type 'windows-nt
+  (let* ((activate-command (if (eq system-type 'windows-nt)
                                    '("activate")
-                                   '("conda" "activate"))))
+                                   '("conda" "activate")))
          (full-command (append activate-command `(,conda-env-current-name "\n")))
          (command-string (combine-and-quote-strings full-command)))
     (comint-send-string process command-string)))
