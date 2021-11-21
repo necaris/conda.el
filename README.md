@@ -184,7 +184,8 @@ open a file in a certain project. This can be done with the `conda-env-autoactiv
 minor mode, which will:
 
   - check for a [per-directory local variable](https://www.gnu.org/software/emacs/manual/html_node/emacs/Directory-Variables.html)
-    setting the `conda-project-env-name`
+    setting the `conda-project-env-path` variable with either the name or
+    the full path to an existing conda environment
   - search up the directory tree for a file defining a conda environment, such
     as [an `environment.yml` file](http://conda.pydata.org/docs/using/envs.html#share-an-environment),
     and try to activate the named environment
