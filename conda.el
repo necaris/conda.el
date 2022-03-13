@@ -97,6 +97,9 @@ environment variable."
   (if (eq system-type 'windows-nt) "Scripts" "bin")
   "Name of the directory containing executables.  It is system dependent.")
 
+(defvar conda-env-meta-dir "conda-meta"
+  "Name of the directory containing metadata. This should be consistent across platforms.")
+
 (defvar conda-env-name-for-buffer nil  ;; placeholder for buffer-local variable
   "Current conda environment for the project.  Should always be buffer-local.")
 ;; ensure it's considered safe
@@ -114,9 +117,11 @@ environment variable."
 
 (defun conda--env-dir-is-valid (candidate)
   "Confirm that CANDIDATE is a valid conda environment."
-  (and (not (s-blank? candidate))
-       (f-directory?
-        (concat (file-name-as-directory candidate) conda-env-executables-dir))))
+  (let ((dir (file-name-as-directory candidate)))
+    (and (not (s-blank? candidate))
+         (f-directory? dir)
+         (or (f-directory? (concat dir conda-env-executables-dir))
+             (f-directory? (concat dir conda-env-meta-dir))))))
 
 (defun conda--filter-blanks (items)
   "Remove empty string items from ITEMS."
@@ -255,14 +260,11 @@ It's platform specific in that it uses the platform's native path separator."
 
 (defun conda-env-candidates-from-dir (dir)
   "Return a list of candidate environment names from DIR."
-  (let ((proper-dir (file-name-as-directory (expand-file-name dir))))
+  (let ((envs-dir (file-name-as-directory (expand-file-name dir))))
     (if (not (file-accessible-directory-p proper-dir))
         (list) ;; an empty list of candidates
-      (-filter (lambda (s)
-                 (let ((subdir (concat proper-dir s)))
-                   (car (file-attributes
-                         (concat (file-name-as-directory subdir)
-                                 conda-env-executables-dir)))))
+      (-filter (lambda (c)
+                 (conda--env-dir-is-valid (concat envs-dir c)))
                (directory-files proper-dir nil "^[^.]")))))
 
 (defun conda-env-stripped-path (path-or-path-elements)
