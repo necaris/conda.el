@@ -124,15 +124,16 @@ environment variable."
              (f-directory? (concat dir conda-env-meta-dir))))))
 
 (defun conda--filter-blanks (items)
-  "Remove empty string items from ITEMS."
-  (-filter
-   (lambda (p) (not (s-blank? p)))
-   items))
+  "Remove empty strings from ITEMS."
+  (-filter (lambda (p)
+             (not (s-blank? p)))
+           items))
 
 (defun conda--purge-history (candidates)
   "Remove history candidates that are not in CANDIDATES."
   (setq conda-env-history
-        (-filter (lambda (s) (-contains? candidates s))
+        (-filter (lambda (s)
+                   (-contains? candidates s))
                  conda-env-history)) )
 
 (defun conda--read-env-name ()
@@ -154,6 +155,7 @@ environment variable."
     this problem")))
 
 (defun conda--contains-env-yml? (candidate)
+  "Does CANDIDATE contain an environment.yml?"
   (f-exists? (f-expand "environment.yml" candidate)))
 
 (defun conda--find-env-yml (dir)
@@ -405,8 +407,8 @@ It's platform specific in that it uses the platform's native path separator."
   ;; TODO: make sure the shell has been set up for `conda activate`!
   ;; Do we need to `eval' the conda activation script every time?
   (let* ((activate-command (if (eq system-type 'windows-nt)
-                                   '("activate")
-                                   '("conda" "activate")))
+                               '("activate")
+                             '("conda" "activate")))
          (full-command (append activate-command `(,conda-env-current-name "\n")))
          (command-string (combine-and-quote-strings full-command)))
     (comint-send-string process command-string)))
