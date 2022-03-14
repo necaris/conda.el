@@ -342,11 +342,11 @@ It's platform specific in that it uses the platform's native path separator.
 (defun conda-env-candidates-from-dir (dir)
   "Return a list of candidate environment names from DIR."
   (let ((envs-dir (file-name-as-directory (expand-file-name dir))))
-    (if (not (file-accessible-directory-p proper-dir))
+    (if (not (file-accessible-directory-p envs-dir))
         (list) ;; an empty list of candidates
       (-filter (lambda (c)
                  (conda--env-dir-is-valid (concat envs-dir c)))
-               (directory-files proper-dir nil "^[^.]")))))
+               (directory-files envs-dir nil "^[^.]")))))
 
 (defun conda-env-stripped-path (path-or-path-elements)
   "Strip PATH-OR-PATH-ELEMENTS of anything inserted by the current environment, returning a list of new path elements."
