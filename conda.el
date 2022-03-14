@@ -21,6 +21,7 @@
 (require 'pythonic)
 (require 'f)
 (require 'eshell)
+(require 'json)
 
 ;; TODO:
 ;; - conda install / uninstall from emacs?
@@ -389,13 +390,15 @@ It's platform specific in that it uses the platform's native path separator.
   (interactive)
   (when (bound-and-true-p conda-env-current-path)
     (run-hooks 'conda-predeactivate-hook)
-    (conda--set-python-shell-virtualenv-var nil)
-    (setq exec-path (conda-env-stripped-path exec-path))
-    (setenv "PATH" (s-join path-separator
-                           (conda-env-stripped-path
-                            (s-split path-separator (getenv "PATH")))))
-    (setenv "VIRTUAL_ENV" nil)
-    (setenv "CONDA_PREFIX" nil)
+    (setq python-shell-virtualenv-root nil)
+    (let ((params (conda--get-deactivation-parameters conda-env-current-path)))
+      (setq exec-path (conda-env-params-path params))
+      (setenv "PATH" (s-join path-separator (conda-env-params-path params)))
+      (if (not (eq nil (conda-env-params-vars-export params)))
+          (conda--update-env-from-params params)
+        (progn ;; otherwise we fall back to legacy heuristics
+          (setenv "VIRTUAL_ENV" nil)
+          (setenv "CONDA_PREFIX" nil))))
     (setq conda-env-current-path nil)
     (setq conda-env-current-name nil)
     (setq eshell-path-env (getenv "PATH"))
@@ -437,17 +440,16 @@ It's platform specific in that it uses the platform's native path separator.
         ;; Use pythonic to activate the environment so that anaconda-mode and
         ;; others know how to work on this
         (pythonic-activate env-dir)
-        ;; setup the python shell
-        (conda--set-python-shell-virtualenv-var env-dir)
-        (let ((path-prefix (conda--get-path-prefix env-dir)))
-          ;; setup emacs exec-path
-          (dolist (env-exec-dir (parse-colon-path path-prefix))
-            (add-to-list 'exec-path env-exec-dir))
-          ;; setup the environment for subprocesses, eshell, etc
-          (setenv "PATH" (concat path-prefix path-separator (getenv "PATH"))))
-        (setq eshell-path-env (getenv "PATH"))
-        (setenv "VIRTUAL_ENV" env-dir)
-        (setenv "CONDA_PREFIX" env-dir)
+        (setq python-shell-virtualenv-root env-dir)
+        (let ((params (conda--get-activation-parameters env-path)))
+          (setq exec-path (conda-env-params-path params))
+          (if (not (eq nil (conda-env-params-vars-export params)))
+              (conda--update-env-from-params params)
+            (progn ;; otherwise we fall back to legacy heuristics
+              (setenv "PATH" (concat path-separator (conda-env-params-path params)))
+              (setq eshell-path-env (getenv "PATH"))
+              (setenv "VIRTUAL_ENV" env-dir)
+              (setenv "CONDA_PREFIX" env-dir))))
         (conda--set-env-gud-pdb-command-name)
         (run-hooks 'conda-postactivate-hook)))
     (if (or conda-message-on-environment-switch (called-interactively-p 'interactive))
