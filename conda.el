@@ -220,12 +220,6 @@ TODO: raise error if no environment found ?? "
     (when filename
       (conda--get-name-from-env-yml (conda--find-env-yml (f-dirname filename))))))
 
-(defun conda--set-python-shell-virtualenv-var (location)
-  "Set appropriate Python shell variable to LOCATION."
-  ;; Emacs 25.1+ defines python-shell-virtualenv-root
-  (if (boundp 'python-shell-virtualenv-root)
-      (setq python-shell-virtualenv-root location)
-    (setq python-shell-virtualenv-path location)))
 
 (defun conda--get-path-prefix (env-dir)
   "Get a platform-specific path string to utilize the conda env in ENV-DIR.
