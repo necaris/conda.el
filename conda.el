@@ -431,14 +431,14 @@ It's platform specific in that it uses the platform's native path separator.
         ;; others know how to work on this
         (pythonic-activate env-dir)
         (setq python-shell-virtualenv-root env-dir)
-        (let ((params (conda--get-activation-parameters env-path)))
+        (let ((params (conda--get-activation-parameters env-dir)))
           (if (not (eq nil (conda-env-params-vars-export params)))
               (conda--update-env-from-params params)
             (progn ;; otherwise we fall back to legacy heuristics
               (setenv "VIRTUAL_ENV" env-dir)
               (setenv "CONDA_PREFIX" env-dir)))
           (setq exec-path (s-split ":" (conda-env-params-path params)))
-	  (message "new path? %s" (conda-env-params-path params))
+          (message "new path? %s" (conda-env-params-path params))
           (setenv "PATH" (conda-env-params-path params)))
         (setq eshell-path-env (getenv "PATH"))
         (conda--set-env-gud-pdb-command-name)
