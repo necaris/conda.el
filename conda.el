@@ -134,6 +134,17 @@ TODO: raise error if no environment found ?? "
       (vconcat)
       (setq conda--installed-version))))
 
+(defun conda--version>= (v1 v2)
+  "Is version vector V1 greater than or equal to V2?"
+  (cl-loop for x across v1
+           for y across v2
+           if (> x y) return nil
+           finally return (>= x y)))
+
+(defun conda--supports-json-activator ()
+  "Does the installed Conda version support JSON activation? See https://github.com/conda/conda/blob/master/CHANGELOG.md#484-2020-08-06."
+  (conda--version>= (conda--get-installed-version) [4 8 4]))
+
 (defun conda--set-env-gud-pdb-command-name ()
   "When in a conda environment, call pdb as \\[python -m pdb]."
   (setq gud-pdb-command-name "python -m pdb"))
