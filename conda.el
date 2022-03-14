@@ -6,7 +6,7 @@
 ;; Version: 0.4
 ;; Package-Version: 0.4
 ;; Keywords: python, environment, conda
-;; Package-Requires: ((emacs "24.4") (pythonic "0.1.0") (dash "2.13.0") (s "1.11.0") (f "0.18.2"))
+;; Package-Requires: ((emacs "25.1") (pythonic "0.1.0") (dash "2.13.0") (s "1.11.0") (f "0.18.2"))
 
 ;; Derived from James Porter's virtualenvwrapper.el (https://github.com/porterjamesj/virtualenvwrapper.el)
 
@@ -402,8 +402,6 @@ It's platform specific in that it uses the platform's native path separator."
 ;;;###autoload
 (defun conda-env-shell-init (process)
   "Activate the current env in a newly opened shell PROCESS."
-  ;; TODO: maintain compatibility with an older Conda version. Do we
-  ;; check the Conda version and cache it?
   ;; TODO: make sure the shell has been set up for `conda activate`!
   ;; Do we need to `eval' the conda activation script every time?
   (let* ((activate-command (if (eq system-type 'windows-nt)
