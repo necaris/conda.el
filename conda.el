@@ -107,6 +107,22 @@ environment variable."
 
 ;; internal utility functions
 
+(defvar conda--installed-version nil
+  "Cached copy of installed Conda version. Set for the lifetime of the process.")
+
+(defun conda--get-installed-version()
+  "Return currently installed Conda version. Cached for the lifetime of the process."
+  (if (not (eq conda--installed-version nil))
+      conda--installed-version
+    (s-with (shell-command-to-string "conda -V")
+      (s-trim)
+      (s-split " ")
+      (cadr)
+      (s-split "\\.")
+      (mapcar #'string-to-number)
+      (vconcat)
+      (setq conda--installed-version))))
+
 (defun conda--set-env-gud-pdb-command-name ()
   "When in a conda environment, call pdb as \\[python -m pdb]."
   (setq gud-pdb-command-name "python -m pdb"))
