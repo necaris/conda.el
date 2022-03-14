@@ -134,6 +134,13 @@ environment variable."
   "Does the installed Conda version support JSON activation? See https://github.com/conda/conda/blob/master/CHANGELOG.md#484-2020-08-06."
   (conda--version>= (conda--get-installed-version) [4 8 4]))
 
+(defun conda--update-env-from-params (params)
+  "Update the environment from PARAMS."
+  (let ((exports (or (conda-env-params-vars-export params) '())))
+    (mapc (lambda (pair)
+            (setenv (car pair) (cdr pair)))
+          exports)))
+
 (defun conda--set-env-gud-pdb-command-name ()
   "When in a conda environment, call pdb as \\[python -m pdb]."
   (setq gud-pdb-command-name "python -m pdb"))
@@ -209,10 +216,60 @@ environment variable."
     (when filename
       (conda--get-name-from-env-yml (conda--find-env-yml (f-dirname filename))))))
 
+(cl-defstruct conda-env-params
+  "Parameters necessary for (de)activating a Conda environment"
+  path
+  vars-export
+  vars-set
+  vars-unset
+  scripts-activate
+  scripts-deactivate)
+
+(defun conda--get-activation-parameters (env-dir)
+  "Return activation values for the environment in ENV-DIR, as a `conda-env-params'
+struct. At minimum, this will contain an updated PATH."
+  (if (not (conda--supports-json-activator))
+      (make-conda-env-params
+       :path (concat (conda--get-path-prefix env-dir) path-separator (getenv "PATH")))
+    (let* ((cmd (format "conda shell.posix+json activate %s" env-dir))
+           (output (shell-command-to-string cmd))
+           ;; TODO: use `json-parse-string' on sufficiently recent Emacs
+           (result (json-read-from-string output)))
+      (make-conda-env-params
+       :path (s-join path-separator (alist-get 'PATH (alist-get 'path result)))
+       :vars-export (alist-get 'export (alist-get 'vars result))
+       :vars-set (alist-get 'set (alist-get 'vars result))
+       :vars-unset (alist-get 'unset (alist-get 'vars result))
+       :scripts-activate (alist-get 'activate (alist-get 'scripts result))
+       :scripts-deactivate  (alist-get 'deactivate (alist-get 'scripts result))))))
+
+(defun conda--get-deactivation-parameters (env-dir)
+  "Return activation values for the environment in ENV-DIR, as a `conda-env-params'
+struct. At minimum, this will contain an updated PATH."
+  (if (not (conda--supports-json-activator))
+      (make-conda-env-params
+       :path (s-with (getenv "PATH")
+               (s-split path-separator)
+               (conda-env-stripped-path)
+               (s-join path-separator)))
+    (let* ((cmd (format "conda shell.posix+json deactivate %s" env-dir))
+           (output (shell-command-to-string cmd))
+           ;; TODO: use `json-parse-string' on sufficiently recent Emacs
+           (result (json-read-from-string output)))
+      (make-conda-env-params
+       :path (s-join path-separator (alist-get 'PATH (alist-get 'path result)))
+       :vars-export (alist-get 'export (alist-get 'vars result))
+       :vars-set (alist-get 'set (alist-get 'vars result))
+       :vars-unset (alist-get 'unset (alist-get 'vars result))
+       :scripts-activate (alist-get 'activate (alist-get 'scripts result))
+       :scripts-deactivate  (alist-get 'deactivate (alist-get 'scripts result))))))
+
+
 
 (defun conda--get-path-prefix (env-dir)
   "Get a platform-specific path string to utilize the conda env in ENV-DIR.
-It's platform specific in that it uses the platform's native path separator."
+It's platform specific in that it uses the platform's native path separator.
+(NOTE: prefer `conda--get-activation-parameters' to this where possible)."
   (s-trim
    (with-output-to-string
      (let ((conda-anaconda-home-tmp conda-anaconda-home))
