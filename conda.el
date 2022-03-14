@@ -5,7 +5,7 @@
 ;; URL: http://github.com/necaris/conda.el
 ;; Version: 0.4
 ;; Package-Version: 0.4
-;; Keywords: python, environment, conda
+;; Keywords: languages, local, tools, python, environment, conda
 ;; Package-Requires: ((emacs "25.1") (pythonic "0.1.0") (dash "2.13.0") (s "1.11.0") (f "0.18.2"))
 
 ;; Derived from James Porter's virtualenvwrapper.el (https://github.com/porterjamesj/virtualenvwrapper.el)
@@ -362,8 +362,7 @@ It's platform specific in that it uses the platform's native path separator."
         (conda--set-env-gud-pdb-command-name)
         (run-hooks 'conda-postactivate-hook)))
     (if (or conda-message-on-environment-switch (called-interactively-p 'interactive))
-        (message "Switched to conda environment: %s" env-path)
-      )))
+        (message "Switched to conda environment: %s" env-path))))
 
 ;; for hilarious reasons to do with bytecompiling, this has to be here
 ;; instead of below
