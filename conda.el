@@ -31,12 +31,24 @@
   "Conda (environment) manager for Emacs."
   :group 'python)
 
-(defcustom conda-anaconda-home
-  (expand-file-name (or (getenv "ANACONDA_HOME") "~/.anaconda3/"))
-  "Location of your Anaconda installation.
+(defcustom conda-home-candidates
+  '("~/.anaconda3" "~/miniconda3" "~/mambaforge" "~/anaconda" "~/miniconda" "~/mamba")
+  "Location of possible candidates for conda environment directory
+anaconda3 is the default for "
+  :type '(list string)
+  :groupe 'conda)
 
-The default location is ~/.anaconda3/, or read from the ANACONDA_HOME
-environment variable."
+(defcustom conda-anaconda-home
+  (expand-file-name (or (getenv "ANACONDA_HOME")
+                        (catch 'conda-catched-home
+                          (dolist (candidate conda-home-candidates)
+                            (when (f-dir? (expand-file-name candidate))
+                              (throw 'conda-catched-home candidate))))))
+  "Location of your conda installation.
+
+Iterate over default locations in CONDA-HOME-CANDIDATES, or read from the
+ANACONDA_HOME environment variable.
+TODO: raise error if no environment found ?? "
   :type 'directory
   :group 'conda)
 
