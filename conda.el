@@ -33,10 +33,9 @@
 
 (defcustom conda-home-candidates
   '("~/.anaconda3" "~/miniconda3" "~/mambaforge" "~/anaconda" "~/miniconda" "~/mamba")
-  "Location of possible candidates for conda environment directory
-anaconda3 is the default for "
+  "Location of possible candidates for conda environment directory"
   :type '(list string)
-  :groupe 'conda)
+  :group 'conda)
 
 (defcustom conda-anaconda-home
   (expand-file-name (or (getenv "ANACONDA_HOME")
