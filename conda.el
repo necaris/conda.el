@@ -128,7 +128,7 @@ environment variable."
   "Is version vector V1 greater than or equal to V2?"
   (cl-loop for x across v1
            for y across v2
-           if (> x y) return nil
+           if (> x y) return t
            finally return (>= x y)))
 
 (defun conda--supports-json-activator ()
