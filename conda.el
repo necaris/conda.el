@@ -254,7 +254,7 @@ struct. At minimum, this will contain an updated PATH."
                (s-split path-separator)
                (conda-env-stripped-path)
                (s-join path-separator)))
-    (let* ((cmd (format "conda shell.posix+json deactivate %s" env-dir))
+    (let* ((cmd (format "conda shell.posix+json deactivate"))
            (output (shell-command-to-string cmd))
            ;; TODO: use `json-parse-string' on sufficiently recent Emacs
            (result (json-read-from-string output)))
