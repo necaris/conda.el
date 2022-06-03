@@ -151,7 +151,7 @@ TODO: raise error if no environment found ?? "
   (let ((exports (or (conda-env-params-vars-export params) '())))
     (mapc (lambda (pair)
             (message "About to set %s to %s" (car pair) (cdr pair))
-            (setenv (car pair) (cdr pair)))
+            (setenv (format "%s" (car pair)) (format "%s" (cdr pair))))
           exports)))
 
 (defun conda--set-env-gud-pdb-command-name ()
