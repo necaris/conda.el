@@ -3,66 +3,39 @@ on:
   - push
 
 jobs:
-  test-on-windows:
-    runs-on: windows-latest
-    env:
-      CACHE_NUM: 0
-    steps:
-      # TODO: figure this out, add caching to all steps
-      # - uses: actions/cache@v1
-      #   with:
-      #     path: C:\Temp\Choco
-      #     key: ${{ env.CACHE_NUM }}
-      # - uses: crazy-max/ghaction-chocolatey@v1
-      #   with:
-      #     args: config set cacheLocation C:\Temp\Choco
-      - uses: crazy-max/ghaction-chocolatey@v1
-        with:
-          args: install emacs
-      - uses: goanpeca/setup-miniconda@v1
-        with:
-          miniconda-version: latest
-      - name: create conda environment foo
-        run: conda create -y -n foo python=3.6
-      - uses: actions/checkout@v1
-      - name: install dependencies & run tests
-        run: >-
-          emacs -Q --batch -L .
-          --load "ci/deps.el"
-          --load "conda.el"
-          --load "test/conda-test.el"
-          -f ert-run-tests-batch-and-exit
-
   test:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os:
           - ubuntu-latest
-          - macos-latest
+          # - macos-latest
+          # TODO: windows
         emacs_version:
-          # - 24.5
-          - 25.3
-          - 26.3
-          - snapshot
+          # - 25.3
+          # - 26.3
+          # - 27.2
+          - 28.1
+          # - snapshot
         miniconda_version:
-          # - 4.4.10
-          # - 4.5.12
-          - 4.6.14
-          - 4.7.12
-          - latest
-    # TODO: specify conda envs in an env var or something
-    # env:
+          # - 4.6
+          - 4.7
+          - 4.8
+          # - 4.9
+          # - 4.10
+          # - 4.11
+          - 4.12
+          # - 4.13
     steps:
-      - uses: purcell/setup-emacs@master
+      - uses: purcell/setup-emacs@v3.0
         with:
           version: ${{ matrix.emacs_version }}
-      - uses: goanpeca/setup-miniconda@v1
+      - uses: conda-incubator/setup-miniconda@v2
         with:
           miniconda-version: ${{ matrix.miniconda_version }}
       - name: create conda environment foo
-        run: conda create -y -n foo python=3.6
-      - uses: actions/checkout@v1
+        run: conda create -y -n foo python=3.10
+      - uses: actions/checkout@v2
       - name: install dependencies & run tests
         run: >-
           emacs -Q --batch -L .
@@ -70,16 +43,3 @@ jobs:
           --load "conda.el"
           --load "test/conda-test.el"
           -f ert-run-tests-batch-and-exit
-      # TODO: restore
-      # - name: Initialize sandbox
-      #   run: |
-      #     SANDBOX_DIR=$(mktemp -d) || exit 1
-      #     echo ::set-env name=SANDBOX_DIR::$SANDBOX_DIR
-      #     ./makem.sh -vv --sandbox=$SANDBOX_DIR --install-deps --install-linters
-      # # The "all" rule is not used, because it treats compilation warnings
-      # # as failures, so linting and testing are run as separate steps.
-      # - name: Lint
-      #   continue-on-error: true
-      #   run: ./makem.sh -vv --sandbox=$SANDBOX_DIR lint
-      # - name: Test
-      #   run: ./makem.sh -vv --sandbox=$SANDBOX_DIR test
