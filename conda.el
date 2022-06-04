@@ -5,8 +5,8 @@
 ;; URL: http://github.com/necaris/conda.el
 ;; Version: 0.4
 ;; Package-Version: 0.4
-;; Keywords: python, environment, conda
-;; Package-Requires: ((emacs "24.4") (pythonic "0.1.0") (dash "2.13.0") (s "1.11.0") (f "0.18.2"))
+;; Keywords: languages, local, tools, python, environment, conda
+;; Package-Requires: ((emacs "25.1") (pythonic "0.1.0") (dash "2.13.0") (s "1.11.0") (f "0.18.2"))
 
 ;; Derived from James Porter's virtualenvwrapper.el (https://github.com/porterjamesj/virtualenvwrapper.el)
 
@@ -21,6 +21,7 @@
 (require 'pythonic)
 (require 'f)
 (require 'eshell)
+(require 'json)
 
 ;; TODO:
 ;; - conda install / uninstall from emacs?
@@ -118,6 +119,41 @@ TODO: raise error if no environment found ?? "
 
 ;; internal utility functions
 
+(defvar conda--installed-version nil
+  "Cached copy of installed Conda version. Set for the lifetime of the process.")
+
+(defun conda--get-installed-version()
+  "Return currently installed Conda version. Cached for the lifetime of the process."
+  (if (not (eq conda--installed-version nil))
+      conda--installed-version
+    (s-with (shell-command-to-string "conda -V")
+      (s-trim)
+      (s-split " ")
+      (cadr)
+      (s-split "\\.")
+      (mapcar #'string-to-number)
+      (vconcat)
+      (setq conda--installed-version))))
+
+(defun conda--version>= (v1 v2)
+  "Is version vector V1 greater than or equal to V2?"
+  (cl-loop for x across v1
+           for y across v2
+           if (> x y) return t
+           finally return (>= x y)))
+
+(defun conda--supports-json-activator ()
+  "Does the installed Conda version support JSON activation? See https://github.com/conda/conda/blob/master/CHANGELOG.md#484-2020-08-06."
+  (conda--version>= (conda--get-installed-version) [4 8 4]))
+
+(defun conda--update-env-from-params (params)
+  "Update the environment from PARAMS."
+  (let ((exports (or (conda-env-params-vars-export params) '())))
+    (mapc (lambda (pair)
+            (message "About to set %s to %s" (car pair) (cdr pair))
+            (setenv (format "%s" (car pair)) (format "%s" (cdr pair))))
+          exports)))
+
 (defun conda--set-env-gud-pdb-command-name ()
   "When in a conda environment, call pdb as \\[python -m pdb]."
   (setq gud-pdb-command-name "python -m pdb"))
@@ -193,16 +229,60 @@ TODO: raise error if no environment found ?? "
     (when filename
       (conda--get-name-from-env-yml (conda--find-env-yml (f-dirname filename))))))
 
-(defun conda--set-python-shell-virtualenv-var (location)
-  "Set appropriate Python shell variable to LOCATION."
-  ;; Emacs 25.1+ defines python-shell-virtualenv-root
-  (if (boundp 'python-shell-virtualenv-root)
-      (setq python-shell-virtualenv-root location)
-    (setq python-shell-virtualenv-path location)))
+(cl-defstruct conda-env-params
+  "Parameters necessary for (de)activating a Conda environment"
+  path
+  vars-export
+  vars-set
+  vars-unset
+  scripts-activate
+  scripts-deactivate)
+
+(defun conda--get-activation-parameters (env-dir)
+  "Return activation values for the environment in ENV-DIR, as a `conda-env-params'
+struct. At minimum, this will contain an updated PATH."
+  (if (not (conda--supports-json-activator))
+      (make-conda-env-params
+       :path (concat (conda--get-path-prefix env-dir) path-separator (getenv "PATH")))
+    (let* ((cmd (format "conda shell.posix+json activate %s" env-dir))
+           (output (shell-command-to-string cmd))
+           ;; TODO: use `json-parse-string' on sufficiently recent Emacs
+           (result (json-read-from-string output)))
+      (make-conda-env-params
+       :path (s-join path-separator (alist-get 'PATH (alist-get 'path result)))
+       :vars-export (alist-get 'export (alist-get 'vars result))
+       :vars-set (alist-get 'set (alist-get 'vars result))
+       :vars-unset (alist-get 'unset (alist-get 'vars result))
+       :scripts-activate (alist-get 'activate (alist-get 'scripts result))
+       :scripts-deactivate  (alist-get 'deactivate (alist-get 'scripts result))))))
+
+(defun conda--get-deactivation-parameters (env-dir)
+  "Return activation values for the environment in ENV-DIR, as a `conda-env-params'
+struct. At minimum, this will contain an updated PATH."
+  (if (not (conda--supports-json-activator))
+      (make-conda-env-params
+       :path (s-with (getenv "PATH")
+               (s-split path-separator)
+               (conda-env-stripped-path)
+               (s-join path-separator)))
+    (let* ((cmd (format "conda shell.posix+json deactivate"))
+           (output (shell-command-to-string cmd))
+           ;; TODO: use `json-parse-string' on sufficiently recent Emacs
+           (result (json-read-from-string output)))
+      (make-conda-env-params
+       :path (s-join path-separator (alist-get 'PATH (alist-get 'path result)))
+       :vars-export (alist-get 'export (alist-get 'vars result))
+       :vars-set (alist-get 'set (alist-get 'vars result))
+       :vars-unset (alist-get 'unset (alist-get 'vars result))
+       :scripts-activate (alist-get 'activate (alist-get 'scripts result))
+       :scripts-deactivate  (alist-get 'deactivate (alist-get 'scripts result))))))
+
+
 
 (defun conda--get-path-prefix (env-dir)
   "Get a platform-specific path string to utilize the conda env in ENV-DIR.
-It's platform specific in that it uses the platform's native path separator."
+It's platform specific in that it uses the platform's native path separator.
+(NOTE: prefer `conda--get-activation-parameters' to this where possible)."
   (s-trim
    (with-output-to-string
      (let ((conda-anaconda-home-tmp conda-anaconda-home))
@@ -311,13 +391,15 @@ It's platform specific in that it uses the platform's native path separator."
   (interactive)
   (when (bound-and-true-p conda-env-current-path)
     (run-hooks 'conda-predeactivate-hook)
-    (conda--set-python-shell-virtualenv-var nil)
-    (setq exec-path (conda-env-stripped-path exec-path))
-    (setenv "PATH" (s-join path-separator
-                           (conda-env-stripped-path
-                            (s-split path-separator (getenv "PATH")))))
-    (setenv "VIRTUAL_ENV" nil)
-    (setenv "CONDA_PREFIX" nil)
+    (setq python-shell-virtualenv-root nil)
+    (let ((params (conda--get-deactivation-parameters conda-env-current-path)))
+      (if (not (eq nil (conda-env-params-vars-export params)))
+          (conda--update-env-from-params params)
+        (progn ;; otherwise we fall back to legacy heuristics
+          (setenv "VIRTUAL_ENV" nil)
+          (setenv "CONDA_PREFIX" nil)))
+      (setq exec-path (s-split ":" (conda-env-params-path params)))
+      (setenv "PATH" (conda-env-params-path params)))
     (setq conda-env-current-path nil)
     (setq conda-env-current-name nil)
     (setq eshell-path-env (getenv "PATH"))
@@ -359,22 +441,21 @@ It's platform specific in that it uses the platform's native path separator."
         ;; Use pythonic to activate the environment so that anaconda-mode and
         ;; others know how to work on this
         (pythonic-activate env-dir)
-        ;; setup the python shell
-        (conda--set-python-shell-virtualenv-var env-dir)
-        (let ((path-prefix (conda--get-path-prefix env-dir)))
-          ;; setup emacs exec-path
-          (dolist (env-exec-dir (parse-colon-path path-prefix))
-            (add-to-list 'exec-path env-exec-dir))
-          ;; setup the environment for subprocesses, eshell, etc
-          (setenv "PATH" (concat path-prefix path-separator (getenv "PATH"))))
+        (setq python-shell-virtualenv-root env-dir)
+        (let ((params (conda--get-activation-parameters env-dir)))
+          (if (not (eq nil (conda-env-params-vars-export params)))
+              (conda--update-env-from-params params)
+            (progn ;; otherwise we fall back to legacy heuristics
+              (setenv "VIRTUAL_ENV" env-dir)
+              (setenv "CONDA_PREFIX" env-dir)))
+          (setq exec-path (s-split ":" (conda-env-params-path params)))
+          (message "new path? %s" (conda-env-params-path params))
+          (setenv "PATH" (conda-env-params-path params)))
         (setq eshell-path-env (getenv "PATH"))
-        (setenv "VIRTUAL_ENV" env-dir)
-        (setenv "CONDA_PREFIX" env-dir)
         (conda--set-env-gud-pdb-command-name)
         (run-hooks 'conda-postactivate-hook)))
     (if (or conda-message-on-environment-switch (called-interactively-p 'interactive))
-        (message "Switched to conda environment: %s" env-path)
-      )))
+        (message "Switched to conda environment: %s" env-path))))
 
 ;; for hilarious reasons to do with bytecompiling, this has to be here
 ;; instead of below
@@ -413,8 +494,6 @@ It's platform specific in that it uses the platform's native path separator."
 ;;;###autoload
 (defun conda-env-shell-init (process)
   "Activate the current env in a newly opened shell PROCESS."
-  ;; TODO: maintain compatibility with an older Conda version. Do we
-  ;; check the Conda version and cache it?
   ;; TODO: make sure the shell has been set up for `conda activate`!
   ;; Do we need to `eval' the conda activation script every time?
   (let* ((activate-command (if (eq system-type 'windows-nt)
