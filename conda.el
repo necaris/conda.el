@@ -33,7 +33,7 @@
   :group 'python)
 
 (defcustom conda-home-candidates
-  '("~/.anaconda3" "~/miniconda3" "~/mambaforge" "~/anaconda" "~/miniconda" "~/mamba")
+  '("~/.anaconda3" "~/miniconda3" "~/mambaforge" "~/anaconda" "~/miniconda" "~/mamba" "~/.conda")
   "Location of possible candidates for conda environment directory"
   :type '(list string)
   :group 'conda)
