@@ -480,8 +480,8 @@ ANACONDA_HOME environment variable."
        (conda-env-activate ,name) ;; switch it up
        (unwind-protect
            (progn
-             ,@forms) ;; evaluate forms
-         (if prev-env ;; switch back
+             ,@forms)
+         (if prev-env-path
              (conda-env-activate-path prev-env-path)
            (conda-env-deactivate))))))
 
