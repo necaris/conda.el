@@ -25,7 +25,6 @@
 
 ;; TODO:
 ;; - conda install / uninstall from emacs?
-;; - want to set multiple possible home dirs for envs
 ;; - make this work in addition to `pew` or `virtualenvwrapper` or similar
 
 (defgroup conda nil
@@ -34,7 +33,7 @@
 
 (defcustom conda-home-candidates
   '("~/.anaconda3" "~/miniconda3" "~/mambaforge" "~/anaconda" "~/miniconda" "~/mamba" "~/.conda")
-  "Location of possible candidates for conda environment directory"
+  "Location of possible candidates for conda environment directory."
   :type '(list string)
   :group 'conda)
 
@@ -47,8 +46,7 @@
   "Location of your conda installation.
 
 Iterate over default locations in CONDA-HOME-CANDIDATES, or read from the
-ANACONDA_HOME environment variable.
-TODO: raise error if no environment found ?? "
+ANACONDA_HOME environment variable."
   :type 'directory
   :group 'conda)
 
@@ -119,6 +117,27 @@ TODO: raise error if no environment found ?? "
 
 ;; internal utility functions
 
+(defvar conda--executable-path nil
+  "Cached copy of full path to Conda binary. Set for the lifetime of the process.")
+
+(defun conda--get-executable-path ()
+  "Return full path to Conda binary, or throw an error if it can't be found. Cached for the lifetime of the process."
+  (if (not (eq conda--executable-path nil))
+      conda--executable-path
+    (setq conda--executable-path
+          (cond
+           ((file-executable-p (f-join conda-anaconda-home conda-env-executables-dir "conda"))
+            (f-join conda-anaconda-home conda-env-executables-dir "conda"))
+           ((file-executable-p (f-join conda-anaconda-home conda-env-executables-dir "mamba"))
+            (f-join conda-anaconda-home conda-env-executables-dir "mamba"))
+           ((executable-find "conda"))
+           ((executable-find "mamba"))
+           (t (error
+               "There doesn't appear to be a conda or mamba executable on your exec path. A common
+ cause of problems like this is GUI Emacs not having environment variables set up like the
+ shell.  Check out https://github.com/purcell/exec-path-from-shell for a robust solution to
+ this problem"))))))
+
 (defvar conda--installed-version nil
   "Cached copy of installed Conda version. Set for the lifetime of the process.")
 
@@ -126,7 +145,7 @@ TODO: raise error if no environment found ?? "
   "Return currently installed Conda version. Cached for the lifetime of the process."
   (if (not (eq conda--installed-version nil))
       conda--installed-version
-    (s-with (shell-command-to-string "conda -V")
+    (s-with (shell-command-to-string (format "%s -V" (conda--get-executable-path)))
       (s-trim)
       (s-split " ")
       (cadr)
@@ -192,15 +211,6 @@ TODO: raise error if no environment found ?? "
                (format " (currently %s)" conda-env-current-name)
              ""))))
 
-(defun conda--check-executable ()
-  "Verify there is a conda executable available, throwing an error if not."
-  (unless (executable-find "conda")
-    (error "There doesn't appear to be a conda executable on your exec path.  A
-    common cause of problems like this is GUI Emacs not having environment
-    variables set up like the shell.  Check out
-    https://github.com/purcell/exec-path-from-shell for a robust solution to
-    this problem")))
-
 (defun conda--contains-env-yml? (candidate)
   "Does CANDIDATE contain an environment.yml?"
   (f-exists? (f-expand "environment.yml" candidate)))
@@ -230,7 +240,7 @@ TODO: raise error if no environment found ?? "
       (conda--get-name-from-env-yml (conda--find-env-yml (f-dirname filename))))))
 
 (cl-defstruct conda-env-params
-  "Parameters necessary for (de)activating a Conda environment"
+  "Parameters necessary for (de)activating a Conda environment."
   path
   vars-export
   vars-set
@@ -239,14 +249,14 @@ TODO: raise error if no environment found ?? "
   scripts-deactivate)
 
 (defun conda--get-activation-parameters (env-dir)
-  "Return activation values for the environment in ENV-DIR, as a `conda-env-params'
-struct. At minimum, this will contain an updated PATH."
+  "Return activation values for the environment in ENV-DIR, as a `conda-env-params' struct. At minimum, this will contain an updated PATH."
   (if (not (conda--supports-json-activator))
       (make-conda-env-params
        :path (concat (conda--get-path-prefix env-dir) path-separator (getenv "PATH")))
-    (let* ((cmd (if (eq system-type 'windows-nt)
-                    (format "conda shell.cmd.exe+json activate %s" env-dir)
-                  (format "conda shell.posix+json activate %s" env-dir)))
+    (let* ((binary (conda--get-executable-path))
+           (cmd (if (eq system-type 'windows-nt)
+                    (format "%s shell.cmd.exe+json activate %s" binary env-dir)
+                  (format "%s shell.posix+json activate %s" binary env-dir)))
            (output (shell-command-to-string cmd))
            ;; TODO: use `json-parse-string' on sufficiently recent Emacs
            (result (json-read-from-string output)))
@@ -259,17 +269,17 @@ struct. At minimum, this will contain an updated PATH."
        :scripts-deactivate  (alist-get 'deactivate (alist-get 'scripts result))))))
 
 (defun conda--get-deactivation-parameters (env-dir)
-  "Return activation values for the environment in ENV-DIR, as a `conda-env-params'
-struct. At minimum, this will contain an updated PATH."
+  "Return activation values for the environment in ENV-DIR, as a `conda-env-params' struct. At minimum, this will contain an updated PATH."
   (if (not (conda--supports-json-activator))
       (make-conda-env-params
        :path (s-with (getenv "PATH")
                (s-split path-separator)
                (conda-env-stripped-path)
                (s-join path-separator)))
-    (let* ((cmd (if (eq system-type 'windows-nt)
-                    (format "conda shell.cmd.exe+json deactivate")
-                  (format "conda shell.posix+json deactivate")))
+    (let* ((binary (conda--get-executable-path))
+           (cmd (if (eq system-type 'windows-nt)
+                    (format "%s shell.cmd.exe+json deactivate" binary)
+                  (format "%s shell.posix+json deactivate" binary)))
            (output (shell-command-to-string cmd))
            ;; TODO: use `json-parse-string' on sufficiently recent Emacs
            (result (json-read-from-string output)))
@@ -284,9 +294,7 @@ struct. At minimum, this will contain an updated PATH."
 
 
 (defun conda--get-path-prefix (env-dir)
-  "Get a platform-specific path string to utilize the conda env in ENV-DIR.
-It's platform specific in that it uses the platform's native path separator.
-(NOTE: prefer `conda--get-activation-parameters' to this where possible)."
+  "Get a path string to utilize the conda env in ENV-DIR. Use the platform's native path separator. Don't use this -- prefer `conda--get-activation-parameters' to this where possible."
   (s-trim
    (with-output-to-string
      (let ((conda-anaconda-home-tmp conda-anaconda-home))
