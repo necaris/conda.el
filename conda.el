@@ -119,6 +119,26 @@ TODO: raise error if no environment found ?? "
 
 ;; internal utility functions
 
+(defvar conda--executable-path nil
+  "Cached copy of full path to Conda binary. Set for the lifetime of the process.")
+
+(defun conda--get-executable-path ()
+  "Return full path to Conda binary, or throw an error if it can't be found. Cached for the lifetime of the process."
+  (if (not (eq conda--executable-path nil))
+      conda--executable-path
+    (setq conda--executable-path
+          (cond
+           ((file-executable-p (f-join conda-anaconda-home conda-env-executables-dir "conda"))
+            (f-join conda-anaconda-home conda-env-executables-dir "conda"))
+           ((file-executable-p (f-join conda-anaconda-home conda-env-executables-dir "mamba"))
+            (f-join conda-anaconda-home conda-env-executables-dir "mamba"))
+           ((executable-find "conda"))
+           ((executable-find "mamba"))
+           (t (error
+               "There doesn't appear to be a conda or mamba executable on your exec path. A common
+ cause of problems like this is GUI Emacs not having environment variables set up like the
+ shell.  Check out https://github.com/purcell/exec-path-from-shell for a robust solution to
+ this problem"))))))
 (defvar conda--installed-version nil
   "Cached copy of installed Conda version. Set for the lifetime of the process.")
 
@@ -126,7 +146,7 @@ TODO: raise error if no environment found ?? "
   "Return currently installed Conda version. Cached for the lifetime of the process."
   (if (not (eq conda--installed-version nil))
       conda--installed-version
-    (s-with (shell-command-to-string "conda -V")
+    (s-with (shell-command-to-string (format "%s -V" (conda--get-executable-path)))
       (s-trim)
       (s-split " ")
       (cadr)
@@ -192,15 +212,6 @@ TODO: raise error if no environment found ?? "
                (format " (currently %s)" conda-env-current-name)
              ""))))
 
-(defun conda--check-executable ()
-  "Verify there is a conda executable available, throwing an error if not."
-  (unless (executable-find "conda")
-    (error "There doesn't appear to be a conda executable on your exec path.  A
-    common cause of problems like this is GUI Emacs not having environment
-    variables set up like the shell.  Check out
-    https://github.com/purcell/exec-path-from-shell for a robust solution to
-    this problem")))
-
 (defun conda--contains-env-yml? (candidate)
   "Does CANDIDATE contain an environment.yml?"
   (f-exists? (f-expand "environment.yml" candidate)))
@@ -244,9 +255,10 @@ struct. At minimum, this will contain an updated PATH."
   (if (not (conda--supports-json-activator))
       (make-conda-env-params
        :path (concat (conda--get-path-prefix env-dir) path-separator (getenv "PATH")))
-    (let* ((cmd (if (eq system-type 'windows-nt)
-                    (format "conda shell.cmd.exe+json activate %s" env-dir)
-                  (format "conda shell.posix+json activate %s" env-dir)))
+    (let* ((binary (conda--get-executable-path))
+           (cmd (if (eq system-type 'windows-nt)
+                    (format "%s shell.cmd.exe+json activate %s" binary env-dir)
+                  (format "%s shell.posix+json activate %s" binary env-dir)))
            (output (shell-command-to-string cmd))
            ;; TODO: use `json-parse-string' on sufficiently recent Emacs
            (result (json-read-from-string output)))
@@ -267,9 +279,10 @@ struct. At minimum, this will contain an updated PATH."
                (s-split path-separator)
                (conda-env-stripped-path)
                (s-join path-separator)))
-    (let* ((cmd (if (eq system-type 'windows-nt)
-                    (format "conda shell.cmd.exe+json deactivate")
-                  (format "conda shell.posix+json deactivate")))
+    (let* ((binary (conda--get-executable-path))
+           (cmd (if (eq system-type 'windows-nt)
+                    (format "%s shell.cmd.exe+json deactivate" binary)
+                  (format "%s shell.posix+json deactivate" binary)))
            (output (shell-command-to-string cmd))
            ;; TODO: use `json-parse-string' on sufficiently recent Emacs
            (result (json-read-from-string output)))
