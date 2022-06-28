@@ -25,7 +25,6 @@
 
 ;; TODO:
 ;; - conda install / uninstall from emacs?
-;; - want to set multiple possible home dirs for envs
 ;; - make this work in addition to `pew` or `virtualenvwrapper` or similar
 
 (defgroup conda nil
@@ -34,7 +33,7 @@
 
 (defcustom conda-home-candidates
   '("~/.anaconda3" "~/miniconda3" "~/mambaforge" "~/anaconda" "~/miniconda" "~/mamba" "~/.conda")
-  "Location of possible candidates for conda environment directory"
+  "Location of possible candidates for conda environment directory."
   :type '(list string)
   :group 'conda)
 
@@ -47,8 +46,7 @@
   "Location of your conda installation.
 
 Iterate over default locations in CONDA-HOME-CANDIDATES, or read from the
-ANACONDA_HOME environment variable.
-TODO: raise error if no environment found ?? "
+ANACONDA_HOME environment variable."
   :type 'directory
   :group 'conda)
 
@@ -139,6 +137,7 @@ TODO: raise error if no environment found ?? "
  cause of problems like this is GUI Emacs not having environment variables set up like the
  shell.  Check out https://github.com/purcell/exec-path-from-shell for a robust solution to
  this problem"))))))
+
 (defvar conda--installed-version nil
   "Cached copy of installed Conda version. Set for the lifetime of the process.")
 
@@ -241,7 +240,7 @@ TODO: raise error if no environment found ?? "
       (conda--get-name-from-env-yml (conda--find-env-yml (f-dirname filename))))))
 
 (cl-defstruct conda-env-params
-  "Parameters necessary for (de)activating a Conda environment"
+  "Parameters necessary for (de)activating a Conda environment."
   path
   vars-export
   vars-set
@@ -250,8 +249,7 @@ TODO: raise error if no environment found ?? "
   scripts-deactivate)
 
 (defun conda--get-activation-parameters (env-dir)
-  "Return activation values for the environment in ENV-DIR, as a `conda-env-params'
-struct. At minimum, this will contain an updated PATH."
+  "Return activation values for the environment in ENV-DIR, as a `conda-env-params' struct. At minimum, this will contain an updated PATH."
   (if (not (conda--supports-json-activator))
       (make-conda-env-params
        :path (concat (conda--get-path-prefix env-dir) path-separator (getenv "PATH")))
@@ -271,8 +269,7 @@ struct. At minimum, this will contain an updated PATH."
        :scripts-deactivate  (alist-get 'deactivate (alist-get 'scripts result))))))
 
 (defun conda--get-deactivation-parameters (env-dir)
-  "Return activation values for the environment in ENV-DIR, as a `conda-env-params'
-struct. At minimum, this will contain an updated PATH."
+  "Return activation values for the environment in ENV-DIR, as a `conda-env-params' struct. At minimum, this will contain an updated PATH."
   (if (not (conda--supports-json-activator))
       (make-conda-env-params
        :path (s-with (getenv "PATH")
@@ -297,9 +294,7 @@ struct. At minimum, this will contain an updated PATH."
 
 
 (defun conda--get-path-prefix (env-dir)
-  "Get a platform-specific path string to utilize the conda env in ENV-DIR.
-It's platform specific in that it uses the platform's native path separator.
-(NOTE: prefer `conda--get-activation-parameters' to this where possible)."
+  "Get a path string to utilize the conda env in ENV-DIR. Use the platform's native path separator. Don't use this -- prefer `conda--get-activation-parameters' to this where possible."
   (s-trim
    (with-output-to-string
      (let ((conda-anaconda-home-tmp conda-anaconda-home))
