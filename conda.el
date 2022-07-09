@@ -287,7 +287,7 @@ ANACONDA_HOME environment variable."
 (defun conda--get-deactivation-parameters (env-dir)
   "Return activation values for the environment in ENV-DIR, as a `conda-env-params' struct. At minimum, this will contain an updated PATH."
   (if (conda--supports-json-activator)
-      (let ((result (conda--call-json-subcommand "deactivate" env-dir)))
+      (let ((result (conda--call-json-subcommand "deactivate")))
         (make-conda-env-params
          :path (s-join path-separator (alist-get 'PATH (alist-get 'path result)))
          :vars-export (alist-get 'export (alist-get 'vars result))
