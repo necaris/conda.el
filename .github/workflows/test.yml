@@ -41,15 +41,19 @@ jobs:
           - ubuntu-latest
           - macos-latest
         emacs_version:
-          # - 24.5
           - 25.3
           - 26.3
+          - 27.1
+          - 28.1
           - snapshot
         miniconda_version:
           # - 4.4.10
           # - 4.5.12
           - 4.6.14
           - 4.7.12
+          - 4.8.4
+          - 4.12.0
+          - 4.13.0
           - latest
     # TODO: specify conda envs in an env var or something
     # env:
@@ -70,16 +74,3 @@ jobs:
           --load "conda.el"
           --load "test/conda-test.el"
           -f ert-run-tests-batch-and-exit
-      # TODO: restore
-      # - name: Initialize sandbox
-      #   run: |
-      #     SANDBOX_DIR=$(mktemp -d) || exit 1
-      #     echo ::set-env name=SANDBOX_DIR::$SANDBOX_DIR
-      #     ./makem.sh -vv --sandbox=$SANDBOX_DIR --install-deps --install-linters
-      # # The "all" rule is not used, because it treats compilation warnings
-      # # as failures, so linting and testing are run as separate steps.
-      # - name: Lint
-      #   continue-on-error: true
-      #   run: ./makem.sh -vv --sandbox=$SANDBOX_DIR lint
-      # - name: Test
-      #   run: ./makem.sh -vv --sandbox=$SANDBOX_DIR test
