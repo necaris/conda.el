@@ -149,28 +149,15 @@ ANACONDA_HOME environment variable."
       (s-trim)
       (s-split " ")
       (cadr)
-      (s-split "\\.")
-      (mapcar #'string-to-number)
-      (vconcat)
       (setq conda--installed-version))))
-
-(defun conda--version> (v1 v2)
-  "Is version vector V1 strictly greater than V2?"
-  (if (or (not (= (length v1) 3))
-          (not (= (length v2) 3)))
-      (error "Mismatched version vectors %s and %s -- cannot compare!" v1 v2))
-  (or (> (aref v1 0) (aref v2 0))
-      (> (aref v1 1) (aref v2 1))
-      (> (aref v1 2) (aref v2 2))
-      nil))
 
 (defun conda--supports-json-activator ()
   "Does the installed Conda version support JSON activation? See https://github.com/conda/conda/blob/master/CHANGELOG.md#484-2020-08-06."
-  (conda--version> (conda--get-installed-version) [4 8 3]))
+  (version< "4.8.3" (conda--get-installed-version)))
 
 (defun conda--supports-old-activate-format ()
   "Does the installed Conda version support the deprecated `..activate' command format?"
-  (not (conda--version> (conda--get-installed-version) [4 12 0])))
+  (version<= (conda--get-installed-version) "4.12.0"))
 
 (defun conda--update-env-from-params (params)
   "Update the environment from PARAMS."
