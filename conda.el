@@ -1,6 +1,6 @@
 ;;; conda.el --- Work with your conda environments
 
-;; Copyright (C) 2016-2020 Rami Chowdhury
+;; Copyright (C) 2016-2022 Rami Chowdhury
 ;; Author: Rami Chowdhury <rami.chowdhury@gmail.com>
 ;; URL: http://github.com/necaris/conda.el
 ;; Version: 0.4
