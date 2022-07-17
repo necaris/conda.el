@@ -255,12 +255,17 @@ ANACONDA_HOME environment variable."
   scripts-activate
   scripts-deactivate)
 
-(defun conda--call-json-subcommand (subcommand env-dir)
-  "Call Conda SUBCOMMAND on ENV-DIR returning JSON."
+(defun conda--call-json-subcommand (subcommand &rest subcommand-args)
+  "Call Conda SUBCOMMAND with SUBCOMMAND-ARGS returning JSON. The most common additional argument is the environment directory."
   (let* ((conda (conda--get-executable-path))
-         (sh (if (eq system-type 'windows-nt) "cmd.exe" "posix"))
-         (cmd (format "%s shell.%s+json %s %s" conda sh subcommand env-dir))
-         (output (shell-command-to-string cmd)))
+         (fmt (format "shell.%s+json"  (if (eq system-type 'windows-nt) "cmd.exe" "posix")))
+         (process-file-args (append (list conda nil t nil)
+                                    (list fmt subcommand)
+                                    subcommand-args))
+         (output (with-output-to-string
+                   (with-current-buffer
+                       standard-output
+                     (apply #'process-file process-file-args)))))
     (if (version< emacs-version "27.1")
         (json-read-from-string output)
       (json-parse-string output :object-type 'alist :null-object nil))))
