@@ -159,6 +159,18 @@ ANACONDA_HOME environment variable."
   "Does the installed Conda version support the deprecated `..activate' command format?"
   (version<= (conda--get-installed-version) "4.12.0"))
 
+(defun conda--call-json (&rest args)
+  "Call Conda with ARGS, assuming we return JSON."
+  (let* ((conda (conda--get-executable-path))
+         (fmt (format "shell.%s+json"  (if (eq system-type 'windows-nt) "cmd.exe" "posix")))
+         (process-file-args (append (list conda nil t nil) args))
+         (output (with-output-to-string
+                   (with-current-buffer
+                       standard-output
+                     (apply #'process-file process-file-args)))))
+    (if (version< emacs-version "27.1")
+        (json-read-from-string output)
+      (json-parse-string output :object-type 'alist :null-object nil))))
 (defun conda--update-env-from-params (params)
   "Update the environment from PARAMS."
   (let ((exports (or (conda-env-params-vars-export params) '())))
@@ -244,18 +256,9 @@ ANACONDA_HOME environment variable."
 
 (defun conda--call-json-subcommand (subcommand &rest subcommand-args)
   "Call Conda SUBCOMMAND with SUBCOMMAND-ARGS returning JSON. The most common additional argument is the environment directory."
-  (let* ((conda (conda--get-executable-path))
-         (fmt (format "shell.%s+json"  (if (eq system-type 'windows-nt) "cmd.exe" "posix")))
-         (process-file-args (append (list conda nil t nil)
-                                    (list fmt subcommand)
-                                    subcommand-args))
-         (output (with-output-to-string
-                   (with-current-buffer
-                       standard-output
-                     (apply #'process-file process-file-args)))))
-    (if (version< emacs-version "27.1")
-        (json-read-from-string output)
-      (json-parse-string output :object-type 'alist :null-object nil))))
+  (let* ((fmt (format "shell.%s+json"  (if (eq system-type 'windows-nt) "cmd.exe" "posix")))
+         (args (append (list fmt subcommand) subcommand-args)))
+    (apply #'conda--call-json args)))
 
 (defun conda--get-activation-parameters (env-dir)
   "Return activation values for the environment in ENV-DIR, as a `conda-env-params' struct. At minimum, this will contain an updated PATH."
