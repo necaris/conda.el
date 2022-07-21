@@ -64,6 +64,11 @@ ANACONDA_HOME environment variable."
   :type 'boolean
   :group 'conda)
 
+(defcustom conda-activate-base-by-default nil
+  "Whether to activate the base environment by default if no other is preferred. Default nil."
+  :type 'boolean
+  :group 'conda)
+
 ;; hooks -- TODO once we actually have environment creation / deletion
 
 (defcustom conda-preactivate-hook nil
