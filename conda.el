@@ -615,10 +615,10 @@ This can be set by a buffer-local or project-local variable (e.g. a
           (message "No Conda environment found for <%s>" (buffer-file-name))))))
 
 (defun conda--switch-buffer-auto-activate (&rest args)
-  "Add conda env activation if a buffer has a file, handling ARGS."
+  "Add Conda environment activation if a buffer has a file, handling ARGS."
   (let ((filename (buffer-file-name)))
     (when filename
-                                        ; (message "switch-buffer auto-activating on <%s>" filename)
+      ;; (message "switch-buffer auto-activating on <%s>" filename)
       (with-demoted-errors "Error: %S"
         (conda-env-activate-for-buffer)))))
 
