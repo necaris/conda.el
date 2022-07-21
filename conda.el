@@ -601,13 +601,17 @@ This can be set by a buffer-local or project-local variable (e.g. a
 `.dir-locals.el` that defines `conda-project-env-path`), or inferred from an
 `environment.yml` or similar at the project level."
   (interactive)
-  (let ((env-name-path (if (bound-and-true-p conda-project-env-path)
-                           conda-project-env-path
-                         (conda-env-name-to-dir (conda--infer-env-from-buffer)))))
-    (if (not env-name-path)
-        (if conda-message-on-environment-switch
-            (message "No conda environment for <%s>" (buffer-file-name)))
-      (conda-env-activate env-name-path))))
+  (let* ((inferred-env (conda--infer-env-from-buffer))
+         (env-path (cond
+                    ((bound-and-true-p conda-project-env-path) conda-project-env-path)
+                    ((not (eql inferred-env nil)) (conda-env-name-to-dir inferred-env))
+                    ((conda-activate-base-by-default) (conda-env-name-to-dir "base"))
+                    (t nil))))
+
+    (if (not (eql env-path nil))
+        (conda-env-activate env-path)
+      (if conda-message-on-environment-switch
+          (message "No Conda environment found for <%s>" (buffer-file-name))))))
 
 (defun conda--switch-buffer-auto-activate (&rest args)
   "Add conda env activation if a buffer has a file, handling ARGS."
