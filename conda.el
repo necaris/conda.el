@@ -254,7 +254,9 @@ Set for the lifetime of the process.")
   "Search up the project tree for an `environment.yml` defining a conda env."
   (let ((filename (buffer-file-name)))
     (when filename
-      (conda--get-name-from-env-yml (conda--find-env-yml (f-dirname filename))))))
+      (or
+       (conda--get-name-from-env-yml (conda--find-env-yml (f-dirname filename)))
+       (if (conda-activate-base-by-default) "base" nil)))))
 
 (cl-defstruct conda-env-params
   "Parameters necessary for (de)activating a Conda environment."
@@ -605,7 +607,6 @@ This can be set by a buffer-local or project-local variable (e.g. a
          (env-path (cond
                     ((bound-and-true-p conda-project-env-path) conda-project-env-path)
                     ((not (eql inferred-env nil)) (conda-env-name-to-dir inferred-env))
-                    ((conda-activate-base-by-default) (conda-env-name-to-dir "base"))
                     (t nil))))
 
     (if (not (eql env-path nil))
