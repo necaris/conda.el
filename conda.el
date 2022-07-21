@@ -25,7 +25,6 @@
 
 ;; TODO:
 ;; - conda install / uninstall from emacs?
-;; - make this work in addition to `pew` or `virtualenvwrapper` or similar
 
 (defgroup conda nil
   "Conda (environment) manager for Emacs."
