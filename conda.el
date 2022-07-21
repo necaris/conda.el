@@ -171,6 +171,21 @@ ANACONDA_HOME environment variable."
     (if (version< emacs-version "27.1")
         (json-read-from-string output)
       (json-parse-string output :object-type 'alist :null-object nil))))
+
+(defvar conda--config nil
+  "Cached copy of configuration that Conda sees (including `condarc', etc).
+Set for the lifetime of the process.")
+
+(defun conda--get-config()
+  "Return current Conda configuration. Cached for the lifetime of the process."
+  (if (not (eq conda--config nil))
+      conda--config
+    (let ((cfg (conda--call-json "config" "--show" "--json")))
+      (setq conda--config cfg))))
+
+;; (conda--get-config)
+;; keys envs-dirs and root-prefix seem immediately relevant
+
 (defun conda--update-env-from-params (params)
   "Update the environment from PARAMS."
   (let ((exports (or (conda-env-params-vars-export params) '())))
