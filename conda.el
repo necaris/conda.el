@@ -36,6 +36,8 @@
   :type '(list string)
   :group 'conda)
 
+;; TODO: find some way to replace this with `(alist-get 'root_prefix (conda--get-config))`
+;; unfortunately right now (conda--get-executable-path) relies on this!
 (defcustom conda-anaconda-home
   (expand-file-name (or (getenv "ANACONDA_HOME")
                         (catch 'conda-catched-home
@@ -54,16 +56,6 @@ ANACONDA_HOME environment variable."
       gud-pdb-command-name
     (setq gud-pdb-command-name "python -m pdb"))
   "Whatever `gud-pdb-command-name' is (usually \\[pdb])."
-  :type 'string
-  :group 'conda)
-
-(defcustom conda-env-home-directory conda-anaconda-home
-  "Location of the directory containing the environments directory."
-  :type 'directory
-  :group 'conda)
-
-(defcustom conda-env-subdirectory "envs"
-  "Location of the environments subdirectory relative to `conda-env-home-directory`."
   :type 'string
   :group 'conda)
 
@@ -332,7 +324,8 @@ Set for the lifetime of the process.")
 
 (defun conda-env-default-location ()
   "Default location of the conda environments -- under the Anaconda installation."
-  (f-full (concat (file-name-as-directory conda-env-home-directory) conda-env-subdirectory)))
+  (let ((candidates (alist-get 'envs_dirs (conda--get-config))))
+    (f-full (aref candidates 0))))
 
 (defun conda-env-name-to-dir (name)
   "Translate NAME to the directory where the environment is located."
