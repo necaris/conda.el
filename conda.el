@@ -25,7 +25,6 @@
 
 ;; TODO:
 ;; - conda install / uninstall from emacs?
-;; - make this work in addition to `pew` or `virtualenvwrapper` or similar
 
 (defgroup conda nil
   "Conda (environment) manager for Emacs."
@@ -37,6 +36,8 @@
   :type '(list string)
   :group 'conda)
 
+;; TODO: find some way to replace this with `(alist-get 'root_prefix (conda--get-config))`
+;; unfortunately right now (conda--get-executable-path) relies on this!
 (defcustom conda-anaconda-home
   (expand-file-name (or (getenv "ANACONDA_HOME")
                         (catch 'conda-catched-home
@@ -55,16 +56,6 @@ ANACONDA_HOME environment variable."
       gud-pdb-command-name
     (setq gud-pdb-command-name "python -m pdb"))
   "Whatever `gud-pdb-command-name' is (usually \\[pdb])."
-  :type 'string
-  :group 'conda)
-
-(defcustom conda-env-home-directory conda-anaconda-home
-  "Location of the directory containing the environments directory."
-  :type 'directory
-  :group 'conda)
-
-(defcustom conda-env-subdirectory "envs"
-  "Location of the environments subdirectory relative to `conda-env-home-directory`."
   :type 'string
   :group 'conda)
 
@@ -159,6 +150,33 @@ ANACONDA_HOME environment variable."
   "Does the installed Conda version support the deprecated `..activate' command format?"
   (version<= (conda--get-installed-version) "4.12.0"))
 
+(defun conda--call-json (&rest args)
+  "Call Conda with ARGS, assuming we return JSON."
+  (let* ((conda (conda--get-executable-path))
+         (fmt (format "shell.%s+json"  (if (eq system-type 'windows-nt) "cmd.exe" "posix")))
+         (process-file-args (append (list conda nil t nil) args))
+         (output (with-output-to-string
+                   (with-current-buffer
+                       standard-output
+                     (apply #'process-file process-file-args)))))
+    (if (version< emacs-version "27.1")
+        (json-read-from-string output)
+      (json-parse-string output :object-type 'alist :null-object nil))))
+
+(defvar conda--config nil
+  "Cached copy of configuration that Conda sees (including `condarc', etc).
+Set for the lifetime of the process.")
+
+(defun conda--get-config()
+  "Return current Conda configuration. Cached for the lifetime of the process."
+  (if (not (eq conda--config nil))
+      conda--config
+    (let ((cfg (conda--call-json "config" "--show" "--json")))
+      (setq conda--config cfg))))
+
+;; (conda--get-config)
+;; keys envs-dirs and root-prefix seem immediately relevant
+
 (defun conda--update-env-from-params (params)
   "Update the environment from PARAMS."
   (let ((exports (or (conda-env-params-vars-export params) '())))
@@ -244,18 +262,9 @@ ANACONDA_HOME environment variable."
 
 (defun conda--call-json-subcommand (subcommand &rest subcommand-args)
   "Call Conda SUBCOMMAND with SUBCOMMAND-ARGS returning JSON. The most common additional argument is the environment directory."
-  (let* ((conda (conda--get-executable-path))
-         (fmt (format "shell.%s+json"  (if (eq system-type 'windows-nt) "cmd.exe" "posix")))
-         (process-file-args (append (list conda nil t nil)
-                                    (list fmt subcommand)
-                                    subcommand-args))
-         (output (with-output-to-string
-                   (with-current-buffer
-                       standard-output
-                     (apply #'process-file process-file-args)))))
-    (if (version< emacs-version "27.1")
-        (json-read-from-string output)
-      (json-parse-string output :object-type 'alist :null-object nil))))
+  (let* ((fmt (format "shell.%s+json"  (if (eq system-type 'windows-nt) "cmd.exe" "posix")))
+         (args (append (list fmt subcommand) subcommand-args)))
+    (apply #'conda--call-json args)))
 
 (defun conda--get-activation-parameters (env-dir)
   "Return activation values for the environment in ENV-DIR, as a `conda-env-params' struct. At minimum, this will contain an updated PATH."
@@ -315,7 +324,8 @@ ANACONDA_HOME environment variable."
 
 (defun conda-env-default-location ()
   "Default location of the conda environments -- under the Anaconda installation."
-  (f-full (concat (file-name-as-directory conda-env-home-directory) conda-env-subdirectory)))
+  (let ((candidates (alist-get 'envs_dirs (conda--get-config))))
+    (f-full (aref candidates 0))))
 
 (defun conda-env-name-to-dir (name)
   "Translate NAME to the directory where the environment is located."
