@@ -256,7 +256,11 @@ Set for the lifetime of the process.")
     (when filename
       (or
        (conda--get-name-from-env-yml (conda--find-env-yml (f-dirname filename)))
-       (if (conda-activate-base-by-default) "base" nil)))))
+       (if (or
+            conda-activate-base-by-default
+            (alist-get 'auto_activate_base (conda--get-config)))
+           "base"
+         nil)))))
 
 (cl-defstruct conda-env-params
   "Parameters necessary for (de)activating a Conda environment."
