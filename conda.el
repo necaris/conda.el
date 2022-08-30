@@ -141,11 +141,14 @@ ANACONDA_HOME environment variable."
   "Return currently installed Conda version. Cached for the lifetime of the process."
   (if (not (eq conda--installed-version nil))
       conda--installed-version
-    (s-with (shell-command-to-string (format "%s -V" (conda--get-executable-path)))
-      (s-trim)
-      (s-split " ")
-      (cadr)
-      (setq conda--installed-version))))
+    (let ((version-output (shell-command-to-string (format "%s -V" (conda--get-executable-path)))))
+      (condition-case err
+          (s-with version-output
+            (s-trim)
+            (s-split " ")
+            (cadr)
+            (setq conda--installed-version))
+        (error "Could not parse Conda version: %s (output was %s)" err version-output)))))
 
 (defun conda--supports-json-activator ()
   "Does the installed Conda version support JSON activation? See https://github.com/conda/conda/blob/master/CHANGELOG.md#484-2020-08-06."
@@ -164,9 +167,12 @@ ANACONDA_HOME environment variable."
                    (with-current-buffer
                        standard-output
                      (apply #'process-file process-file-args)))))
-    (if (version< emacs-version "27.1")
-        (json-read-from-string output)
-      (json-parse-string output :object-type 'alist :null-object nil))))
+    (condition-case err
+        (if (version< emacs-version "27.1")
+            (json-read-from-string output)
+          (json-parse-string output :object-type 'alist :null-object nil))
+      (error "Could not parse %s as JSON: %s" output err))))
+
 
 (defvar conda--config nil
   "Cached copy of configuration that Conda sees (including `condarc', etc).
