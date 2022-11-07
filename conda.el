@@ -183,9 +183,9 @@ ANACONDA_HOME environment variable."
   "Cached copy of configuration that Conda sees (including `condarc', etc).
 Set for the lifetime of the process.")
 
-(defun conda--get-config()
-  "Return current Conda configuration. Cached for the lifetime of the process."
-  (if (not (eq conda--config nil))
+(defun conda--get-config (&optional force-reload)
+  "Return current Conda configuration. Cached for the process' lifetime, unless FORCE-RELOAD."
+  (if (and (not force-reload) (not (eq conda--config nil)))
       conda--config
     (let ((cfg (conda--call-json "config" "--show" "--json")))
       (setq conda--config cfg))))
@@ -422,6 +422,12 @@ Set for the lifetime of the process.")
                          (car candidates)))))
 
 ;; potentially interactive user-exposed functions
+
+(defun conda-reload-config ()
+  "Force-reloads the Conda configuration and displays it."
+  (interactive)
+  (let ((cfg (conda--get-config t)))
+    (message cfg)))
 
 ;;;###autoload
 (defun conda-env-deactivate ()
