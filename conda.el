@@ -168,9 +168,14 @@ ANACONDA_HOME environment variable."
                        standard-output
                      (apply #'process-file process-file-args)))))
     (condition-case err
-        (if (version< emacs-version "27.1")
-            (json-read-from-string output)
-          (json-parse-string output :object-type 'alist :null-object nil))
+        ;; (if (version< emacs-version "27.1")
+        ;;     (json-read-from-string output)
+        ;;   (json-parse-string output :object-type 'alist :null-object nil))
+        (if (progn
+              (require 'json)
+              (fboundp 'json-parse-string))
+	    (json-parse-string output :object-type 'alist :null-object nil)
+          (json-read-from-string output))
       (error "Could not parse %s as JSON: %s" output err))))
 
 
