@@ -60,12 +60,13 @@ ANACONDA_HOME environment variable."
   :group 'conda)
 
 (defcustom conda-message-on-environment-switch t
-  "Whether to message when switching environments. Default true."
+  "Whether to message when switching environments.  Default true."
   :type 'boolean
   :group 'conda)
 
 (defcustom conda-activate-base-by-default nil
-  "Whether to activate the base environment by default if no other is preferred. Default nil."
+  "Whether to activate the base environment by default if no other is preferred.
+Default nil."
   :type 'boolean
   :group 'conda)
 
@@ -104,7 +105,8 @@ ANACONDA_HOME environment variable."
   "Name of the directory containing executables.  It is system dependent.")
 
 (defvar conda-env-meta-dir "conda-meta"
-  "Name of the directory containing metadata. This should be consistent across platforms.")
+  "Name of the directory containing metadata.
+This should be consistent across platforms.")
 
 (defvar conda-env-name-for-buffer nil  ;; placeholder for buffer-local variable
   "Current conda environment for the project.  Should always be buffer-local.")
@@ -114,10 +116,12 @@ ANACONDA_HOME environment variable."
 ;; internal utility functions
 
 (defvar conda--executable-path nil
-  "Cached copy of full path to Conda binary. Set for the lifetime of the process.")
+  "Cached copy of full path to Conda binary.
+Set for the lifetime of the process.")
 
 (defun conda--get-executable-path ()
-  "Return full path to Conda binary, or throw an error if it can't be found. Cached for the lifetime of the process."
+  "Return full path to Conda binary, or throw an error if it can't be found.
+Cached for the lifetime of the process."
   (if (not (eq conda--executable-path nil))
       conda--executable-path
     (setq conda--executable-path
@@ -129,16 +133,18 @@ ANACONDA_HOME environment variable."
            ((executable-find "conda"))
            ((executable-find "mamba"))
            (t (error
-               "There doesn't appear to be a conda or mamba executable on your exec path. A common
+               "There doesn't appear to be a conda or mamba executable on your exec path.  A common
  cause of problems like this is GUI Emacs not having environment variables set up like the
  shell.  Check out https://github.com/purcell/exec-path-from-shell for a robust solution to
  this problem"))))))
 
 (defvar conda--installed-version nil
-  "Cached copy of installed Conda version. Set for the lifetime of the process.")
+  "Cached copy of installed Conda version.
+Set for the lifetime of the process.")
 
 (defun conda--get-installed-version()
-  "Return currently installed Conda version. Cached for the lifetime of the process."
+  "Return currently installed Conda version.
+Cached for the lifetime of the process."
   (if (not (eq conda--installed-version nil))
       conda--installed-version
     (let ((version-output (shell-command-to-string (format "%s -V" (conda--get-executable-path)))))
@@ -151,7 +157,8 @@ ANACONDA_HOME environment variable."
         (error "Could not parse Conda version: %s (output was %s)" err version-output)))))
 
 (defun conda--supports-json-activator ()
-  "Does the installed Conda version support JSON activation? See https://github.com/conda/conda/blob/master/CHANGELOG.md#484-2020-08-06."
+  "Does the installed Conda version support JSON activation?
+See https://github.com/conda/conda/blob/master/CHANGELOG.md#484-2020-08-06."
   (version< "4.8.3" (conda--get-installed-version)))
 
 (defun conda--supports-old-activate-format ()
@@ -184,7 +191,7 @@ ANACONDA_HOME environment variable."
 Set for the lifetime of the process.")
 
 (defun conda--get-config()
-  "Return current Conda configuration. Cached for the lifetime of the process."
+  "Return current Conda configuration.  Cached for the lifetime of the process."
   (if (not (eq conda--config nil))
       conda--config
     (let ((cfg (conda--call-json "config" "--show" "--json")))
@@ -283,13 +290,16 @@ Set for the lifetime of the process.")
   scripts-deactivate)
 
 (defun conda--call-json-subcommand (subcommand &rest subcommand-args)
-  "Call Conda SUBCOMMAND with SUBCOMMAND-ARGS returning JSON. The most common additional argument is the environment directory."
+  "Call Conda SUBCOMMAND with SUBCOMMAND-ARGS returning JSON.
+The most common additional argument is the environment directory."
   (let* ((fmt (format "shell.%s+json"  (if (eq system-type 'windows-nt) "cmd.exe" "posix")))
          (args (append (list fmt subcommand) subcommand-args)))
     (apply #'conda--call-json args)))
 
 (defun conda--get-activation-parameters (env-dir)
-  "Return activation values for the environment in ENV-DIR, as a `conda-env-params' struct. At minimum, this will contain an updated PATH."
+  "Return activation values for the environment in ENV-DIR.
+Returns a `conda-env-params' struct.  At minimum, this will contain an
+updated PATH."
   (if (conda--supports-json-activator)
       (let ((result (conda--call-json-subcommand "activate" env-dir)))
         (make-conda-env-params
@@ -300,7 +310,7 @@ Set for the lifetime of the process.")
          :scripts-activate (alist-get 'activate (alist-get 'scripts result))
          :scripts-deactivate  (alist-get 'deactivate (alist-get 'scripts result))))
     (if (not (conda--supports-old-activate-format))
-        (error "Installed Conda version supports neither JSON nor the old format. This shouldn't happen!")
+        (error "Installed Conda version supports neither JSON nor the old format.  This shouldn't happen!")
       (make-conda-env-params
        :path (concat
               (conda--get-deprecated-path-prefix env-dir)
@@ -308,7 +318,9 @@ Set for the lifetime of the process.")
               (getenv "PATH"))))))
 
 (defun conda--get-deactivation-parameters (env-dir)
-  "Return activation values for the environment in ENV-DIR, as a `conda-env-params' struct. At minimum, this will contain an updated PATH."
+  "Return activation values for the environment in ENV-DIR.
+Returns a `conda-env-params' struct.  At minimum, this will contain an
+updated PATH."
   (if (conda--supports-json-activator)
       (let ((result (conda--call-json-subcommand "deactivate")))
         (make-conda-env-params
@@ -325,7 +337,9 @@ Set for the lifetime of the process.")
              (s-join path-separator)))))
 
 (defun conda--get-deprecated-path-prefix (env-dir)
-  "Get a path string to utilize the conda env in ENV-DIR. Use the platform's native path separator. Don't use this -- prefer `conda--get-activation-parameters' to this where possible."
+  "Get a path string to utilize the conda env in ENV-DIR.
+Use the platform's native path separator.  Don't use this -- prefer
+`conda--get-activation-parameters' to this where possible."
   (s-trim
    (with-output-to-string
      (let ((conda-anaconda-home-tmp conda-anaconda-home))
@@ -399,7 +413,8 @@ Set for the lifetime of the process.")
                (directory-files envs-dir nil "^[^.]")))))
 
 (defun conda-env-stripped-path (path-or-path-elements)
-  "Strip PATH-OR-PATH-ELEMENTS of anything inserted by the current environment, returning a list of new path elements."
+  "Strip PATH-OR-PATH-ELEMENTS of anything inserted by the current environment.
+Returns a list of new path elements."
   (let ((current-env-entry (concat (file-name-as-directory
 				    (expand-file-name conda-env-current-path))
 				   conda-env-executables-dir))
