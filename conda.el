@@ -270,10 +270,13 @@ Set for the lifetime of the process.")
 
 (defun conda--infer-env-from-buffer ()
   "Search up the project tree for an `environment.yml` defining a conda env."
-  (let ((filename (buffer-file-name)))
-    (when filename
+  (let ((working-file-or-dir (or (buffer-file-name) default-directory)))
+    (when working-file-or-dir
+      (conda--get-name-from-env-yml (conda--find-env-yml (f-dirname working-file-or-dir)))
+        (working-dir (or default-directory (f-dirname filename))))
+    (when working-dir
       (or
-       (conda--get-name-from-env-yml (conda--find-env-yml (f-dirname filename)))
+       (conda--get-name-from-env-yml (conda--find-env-yml working-dir))
        (if (or
             conda-activate-base-by-default
             (alist-get 'auto_activate_base (conda--get-config)))
