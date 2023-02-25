@@ -576,24 +576,24 @@ Returns a list of new path elements."
 (defun conda--shell-strip-env (orig-fun &rest args)
   "Use the environment without env to start a new shell, passing ORIG-FUN ARGS."
   (let* ((buffer (car args))
-         (buffer-name (or buffer "*shell*"))
-         (buffer-exists-already (get-buffer buffer-name)))
-    (if (or buffer-exists-already (not conda-env-current-path))
-        (apply orig-fun args)
-      (progn (setenv "PATH"
-                     (s-join
-                      path-separator
-                      (conda-env-stripped-path (s-split path-separator (getenv "PATH")))))
-             (setenv "VIRTUAL_ENV" nil)
-             (apply orig-fun args)
-             (conda-env-shell-init buffer-name)
-             (setenv "PATH"
-                     (concat
-                      (file-name-as-directory conda-env-current-path)
-                      conda-env-executables-dir
-                      path-separator
-                      (getenv "PATH")))
-             (setenv "VIRTUAL_ENV" conda-env-current-path)))))
+         (buffer-name (or buffer "*shell*")))
+    (if conda-env-current-path
+        (progn (setenv "PATH"
+                       (s-join
+                        path-separator
+                        (conda-env-stripped-path (s-split path-separator (getenv "PATH")))))
+               (setenv "VIRTUAL_ENV" nil)))
+    (apply orig-fun args)
+    (if conda-env-current-path
+        (progn
+          (conda-env-shell-init buffer-name)
+          (setenv "PATH"
+                  (concat
+                   (file-name-as-directory conda-env-current-path)
+                   conda-env-executables-dir
+                   path-separator
+                   (getenv "PATH")))
+          (setenv "VIRTUAL_ENV" conda-env-current-path)))))
 
 ;;;###autoload
 (defun conda-env-initialize-interactive-shells ()
