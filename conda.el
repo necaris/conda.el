@@ -126,10 +126,8 @@ Cached for the lifetime of the process."
       conda--executable-path
     (setq conda--executable-path
           (cond
-           ((file-executable-p (f-join conda-anaconda-home conda-env-executables-dir "conda"))
-            (f-join conda-anaconda-home conda-env-executables-dir "conda"))
-           ((file-executable-p (f-join conda-anaconda-home conda-env-executables-dir "mamba"))
-            (f-join conda-anaconda-home conda-env-executables-dir "mamba"))
+           ((locate-file "conda" (list (f-join conda-anaconda-home conda-env-executables-dir)) exec-suffixes 'executable))
+	   ((locate-file "mamba" (list (f-join conda-anaconda-home conda-env-executables-dir)) exec-suffixes 'executable))
            ((executable-find "conda"))
            ((executable-find "mamba"))
            (t (error
