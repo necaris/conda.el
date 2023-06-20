@@ -202,7 +202,8 @@ Set for the lifetime of the process.")
   "Update the environment from PARAMS."
   (let ((exports (or (conda-env-params-vars-export params) '())))
     (mapc (lambda (pair)
-            (message "About to set %s to %s" (car pair) (cdr pair))
+            (let ((inhibit-message t))
+	      (message "About to set %s to %s" (car pair) (cdr pair)))
             (setenv (format "%s" (car pair)) (format "%s" (cdr pair))))
           exports)))
 
@@ -497,7 +498,8 @@ Returns a list of new path elements."
         ;; others know how to work on this
         (pythonic-activate env-dir)
         (setq python-shell-virtualenv-root env-dir)
-        (let ((params (conda--get-activation-parameters env-dir)))
+        (let ((params (conda--get-activation-parameters env-dir))
+	      (inhibit-message t))
           (if (not (eq nil (conda-env-params-vars-export params)))
               (conda--update-env-from-params params)
             (progn ;; otherwise we fall back to legacy heuristics
