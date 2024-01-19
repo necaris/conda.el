@@ -195,15 +195,22 @@ minor mode, which will:
 
 ### displaying the currently active environment on the mode line
 
-The name of the currently active conda environment is stored in the variable
-`conda-env-current-name`. If you want to have it displayed on your customized
-mode line you can just add `(:exec (list conda-env-current-name)))` somewhere
-in your `mode-line-format`. If you don't customize your mode line and just want
-to have the current virtualenv displayed, you can do:
+To add the current env in the mode-line you can run:
 
 ```lisp
-(setq-default mode-line-format (cons '(:exec conda-env-current-name) mode-line-format))
+(conda-mode-line-setup)
 ```
+
+#### displaying with projectile
+
+To display if the conda env is activated inside the projectile mode-line part.
+
+```lisp
+(require 'conda-projectile)
+(conda-projectile-mode-line-setup)
+```
+
+If the projectile name and conda env name mismatch you can modify `conda-projectile-name-assoc` variable.
 
 ### eshell prompt customization
 

@@ -113,6 +113,10 @@ This should be consistent across platforms.")
 ;; ensure it's considered safe
 (put 'conda-env-name-for-buffer 'safe-local-variable 'stringp)
 
+(defvar conda-mode-line '(:propertize
+                          (:eval (when conda-env-current-name (concat "$" conda-env-current-name " ")))
+                          help-echo "Current conda env"))
+
 ;; internal utility functions
 
 (defvar conda--executable-path nil
@@ -437,6 +441,10 @@ Returns a list of new path elements."
                      'conda-env-history
                      (or (car conda-env-history)
                          (car candidates)))))
+
+(defun conda-mode-line-setup ()
+  "Setup a basic mode-line display of current env."
+  (add-to-list 'mode-line-misc-info  conda-mode-line))
 
 ;; potentially interactive user-exposed functions
 
