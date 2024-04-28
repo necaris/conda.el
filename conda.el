@@ -275,18 +275,18 @@ Set for the lifetime of the process.")
                (format " (currently %s)" conda-env-current-name)
              ""))))
 
-(defun conda--contains-env-yml? (candidate)
-  "Does CANDIDATE contain an environment.yml?"
-  (f-exists? (f-expand "environment.yml" candidate)))
+(defun conda--env-yaml-expand (dir)
+  "Does DIR contain an environment.yml?"
+  (seq-find #'f-exists?
+   (list (f-expand "environment.yaml" dir)
+         (f-expand "environment.yml" dir))))
 
 (defun conda--find-env-yml (dir)
   "Find an environment.yml in DIR or its parent directories."
   ;; TODO: implement an optimized finder with e.g. projectile? Or a series of
   ;; finder functions, that stop at the project root when traversing
-  (let ((containing-path (f-traverse-upwards 'conda--contains-env-yml? dir)))
-    (if containing-path
-        (f-expand "environment.yml" containing-path)
-      nil)))
+  (let ((containing-path (f-traverse-upwards #'conda--env-yaml-expand dir)))
+    (if containing-path (conda--env-yaml-expand containing-path) nil)))
 
 (defun conda--get-name-from-env-yml (filename)
   "Pull the `name` property out of the YAML file at FILENAME."
