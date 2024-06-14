@@ -21,6 +21,7 @@
 (require 'pythonic)
 (require 'f)
 (require 'eshell)
+(require 'em-dirs)
 (require 'json)
 
 ;; TODO:
