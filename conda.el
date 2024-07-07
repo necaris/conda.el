@@ -684,11 +684,10 @@ This can be set by a buffer-local or project-local variable (e.g. a
 `.dir-locals.el` that defines `conda-project-env-path`), or inferred from an
 environment YAML file or similar at the project level."
   (interactive)
-  (let* ((inferred-env (conda--infer-env-from-buffer))
-         (env-path (cond
-                    ((bound-and-true-p conda-project-env-path) conda-project-env-path)
-                    ((not (eql inferred-env nil)) (conda-env-name-to-dir inferred-env))
-                    (t nil))))
+  (let ((env-path (if (bound-and-true-p conda-project-env-path) conda-project-env-path
+                    (let ((inferred-env (conda--infer-env-from-buffer)))
+                      (if (not (eql inferred-env nil))
+                          (conda-env-name-to-dir inferred-env))))))
 
     (if (not (eql env-path nil))
         (conda-env-activate env-path)
