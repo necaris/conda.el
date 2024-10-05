@@ -228,7 +228,7 @@ Set for the lifetime of the process.")
 	      (message "About to unset %s" arg))
             (setenv (format "%s" arg) nil))
           unsets))
- (let ((sets (or (conda-env-params-vars-set params) '())))
+  (let ((sets (or (conda-env-params-vars-set params) '())))
     (mapc (lambda (pair)
             (let ((inhibit-message t))
 	      (message "About to set %s to %s" (car pair) (cdr pair)))
@@ -716,3 +716,7 @@ buffer."
 
 ;;; conda.el ends here
 
+;;;; Helper snippet to validate Elisp code
+;; (checkdoc)
+;; (byte-compile-file (buffer-file-name))
+;; (package-buffer-info)
