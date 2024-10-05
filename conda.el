@@ -180,22 +180,18 @@ See https://github.com/conda/conda/blob/master/CHANGELOG.md#484-2020-08-06."
   (version< "4.8.3" (conda--get-installed-version)))
 
 (defun conda--supports-old-activate-format ()
-  "Does the installed Conda version support the deprecated `..activate' command format?"
+  "Does the installed Conda support the deprecated `..activate' command format?"
   (version<= (conda--get-installed-version) "4.12.0"))
 
 (defun conda--call-json (&rest args)
   "Call Conda with ARGS, assuming we return JSON."
   (let* ((conda (conda--get-executable-path))
-         (fmt (format "shell.%s+json"  (if (eq system-type 'windows-nt) "cmd.exe" "posix")))
          (process-file-args (append (list conda nil t nil) args))
          (output (with-output-to-string
                    (with-current-buffer
                        standard-output
                      (apply #'process-file process-file-args)))))
     (condition-case err
-        ;; (if (version< emacs-version "27.1")
-        ;;     (json-read-from-string output)
-        ;;   (json-parse-string output :object-type 'alist :null-object nil))
         (if (progn
               (require 'json)
               (fboundp 'json-parse-string))
@@ -241,11 +237,11 @@ Set for the lifetime of the process.")
 
 (defun conda--set-env-gud-pdb-command-name ()
   "When in a conda environment, call pdb as \\[python -m pdb]."
-  (setq gud-pdb-command-name "python -m pdb"))
+  (setq-default gud-pdb-command-name "python -m pdb"))
 
 (defun conda--set-system-gud-pdb-command-name ()
   "Set the system \\[pdb] command."
-  (setq gud-pdb-command-name conda-system-gud-pdb-command-name))
+  (setq-default gud-pdb-command-name conda-system-gud-pdb-command-name))
 
 (defun conda--env-dir-is-valid (candidate)
   "Confirm that CANDIDATE is a valid conda environment."
@@ -386,6 +382,12 @@ Use the platform's native path separator.  Don't use this -- prefer
            (unless (= 0 return-code)
              (error (format "Error: executing command \"%s\" produced error code %d" command return-code)))))))))
 
+(defun conda--eshell-update-path ()
+  "Update `eshell-path-env' from the current `PATH'."
+  (if (version<= emacs-version "29.1")
+      (setq eshell-path-env (getenv "PATH"))
+    (setq-default eshell-get-path (getenv "PATH"))))
+
 ;; "public" functions
 
 (defun conda-env-clear-history ()
@@ -494,7 +496,7 @@ Returns a list of new path elements."
       (setenv "PATH" (conda-env-params-path params)))
     (setq conda-env-current-path nil)
     (setq conda-env-current-name nil)
-    (setq eshell-path-env (getenv "PATH"))
+    (conda--eshell-update-path)
     (conda--set-system-gud-pdb-command-name)
     (run-hooks 'conda-postdeactivate-hook)
     (when (called-interactively-p 'interactive)
@@ -543,9 +545,8 @@ Returns a list of new path elements."
               (setenv "CONDA_PREFIX" env-dir)))
           (setq exec-path (s-split (if (eq system-type 'windows-nt) ";" ":")
                                    (conda-env-params-path params)))
-          (message "new path? %s" (conda-env-params-path params))
           (setenv "PATH" (conda-env-params-path params)))
-        (setq eshell-path-env (getenv "PATH"))
+        (conda--eshell-update-path)
         (conda--set-env-gud-pdb-command-name)
         (run-hooks 'conda-postactivate-hook)))
     (if (or conda-message-on-environment-switch (called-interactively-p 'interactive))
@@ -651,9 +652,9 @@ Returns a list of new path elements."
 (defun conda-env-initialize-eshell ()
   "Configure eshell for use with conda.el."
   ;; make emacs and eshell share an environment
-  (setq eshell-modify-global-environment t)
+  (setq-default eshell-modify-global-environment t)
   ;; set eshell path
-  (setq eshell-path-env (getenv "PATH"))
+  (conda--eshell-update-path)
   ;; alias functions
   (defun eshell/activate (arg) (conda-env-activate arg))
   (defun eshell/deactivate () (conda-env-deactivate))
@@ -698,11 +699,11 @@ This can be set by a buffer-local or project-local variable (e.g. a
 This mode automatically tries to activate a conda environment for the current
 buffer."
   ;; The initial value.
-  nil
+  :init-value nil
   ;; The indicator for the mode line.
-  nil
+  :lighter nil
   ;; The minor mode bindings.
-  nil
+  :keymap nil
   ;; Kwargs
   :group 'conda
   :global t
