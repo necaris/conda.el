@@ -188,19 +188,18 @@ See https://github.com/conda/conda/blob/master/CHANGELOG.md#484-2020-08-06."
 (defun conda--call-json (&rest args)
   "Call Conda with ARGS, assuming we return JSON."
   (let* ((conda (conda--get-executable-path))
-         (process-file-args (append (list conda nil t nil) args))
-         (output (with-output-to-string
-                   (with-current-buffer
-                       standard-output
-                     (apply #'process-file process-file-args)))))
+         (output (with-temp-buffer
+                   ;; We set the `destination' to ignore stderr -- this may come
+                   ;; back to bite us if anything important is communicated
+                   ;; there
+                   (apply #'call-process
+                          (append (list conda nil '(t nil) nil) args))
+                   (buffer-string))))
     (condition-case err
-        (if (progn
-              (require 'json)
-              (fboundp 'json-parse-string))
-	    (json-parse-string output :object-type 'alist :null-object nil)
+        (if (and (require 'json) (fboundp 'json-parse-string))
+            (json-parse-string output :object-type 'alist :null-object nil)
           (json-read-from-string output))
       (error "Could not parse %s as JSON: %s" output err))))
-
 
 (defvar conda--config nil
   "Cached copy of configuration that Conda sees (including `condarc', etc).
