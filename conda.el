@@ -31,7 +31,23 @@
   :group 'python)
 
 (defcustom conda-home-candidates
-  '("~/.anaconda3" "~/miniconda3" "~/mambaforge" "~/anaconda" "~/miniconda" "~/mamba" "~/.conda")
+  (list "~/.anaconda"
+        "~/.anaconda3"
+        "~/.miniconda"
+        "~/.miniconda3"
+        "~/.miniforge3"
+        "~/.mambaforge"
+        "~/anaconda3"
+        "~/miniconda3"
+        "~/miniforge3"
+        "~/mambaforge"
+        "~/opt/miniconda3"
+        "/opt/miniconda3"
+        "/usr/bin/anaconda3"
+        "/usr/local/anaconda3"
+        "/usr/local/miniconda3"
+        "/usr/local/Caskroom/miniconda/base"
+        "~/.conda")
   "Location of possible candidates for conda environment directory."
   :type '(list string)
   :group 'conda)
@@ -39,11 +55,11 @@
 ;; TODO: find some way to replace this with `(alist-get 'root_prefix (conda--get-config))`
 ;; unfortunately right now (conda--get-executable-path) relies on this!
 (defcustom conda-anaconda-home
-  (expand-file-name (or (getenv "ANACONDA_HOME")
-                        (catch 'conda-catched-home
-                          (dolist (candidate conda-home-candidates)
-                            (when (f-dir? (expand-file-name candidate))
-                              (throw 'conda-catched-home candidate))))))
+  (or (cl-loop for dir in (cons (getenv "ANACONDA_HOME") conda-home-candidates)
+               if (and dir (file-directory-p dir))
+               return (setq conda-anaconda-home (expand-file-name dir)
+                            conda-env-home-directory (expand-file-name dir)))
+      (message "Cannot find Anaconda installation"))
   "Location of your conda installation.
 
 Iterate over default locations in CONDA-HOME-CANDIDATES, or read from the
@@ -686,3 +702,4 @@ buffer."
 (provide 'conda)
 
 ;;; conda.el ends here
+
