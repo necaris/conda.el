@@ -149,7 +149,9 @@ Set for the lifetime of the process.")
 Cached for the lifetime of the process."
   (if (not (eq conda--installed-version nil))
       conda--installed-version
-    (let ((version-output (shell-command-to-string (format "\"%s\" -V" (conda--get-executable-path)))))
+    (let ((version-output (with-temp-buffer
+                            (call-process (conda--get-executable-path) nil '(t nil) nil "-V")
+                            (buffer-string))))
       (condition-case err
           (s-with version-output
             (s-trim)
