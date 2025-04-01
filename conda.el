@@ -282,12 +282,14 @@ its absolute path is returned. Otherwise, it returns nil."
    (list (f-expand "environment.yaml" dir)
          (f-expand "environment.yml" dir))))
 
-(defun conda--find-env-yaml (dir)
-  "Find an environment YAML file in DIR or its parent directories."
+(defun conda--find-env-yaml (&optional dir)
+  "Finds the path of an environment YAML file in DIR,
+or one of its parent directories, or else returns nil."
   ;; TODO: implement an optimized finder with e.g. projectile? Or a series of
   ;; finder functions, that stop at the project root when traversing
-  (let ((containing-path (f-traverse-upwards #'conda--env-yaml-expand dir)))
-    (if containing-path (conda--env-yaml-expand containing-path) nil)))
+  (let* ((dir (or dir default-directory))
+         (containing-path (f-traverse-upwards #'conda--env-yaml-expand dir)))
+    (if containing-path (conda--env-yaml-expand containing-path))))
 
 (defun conda--get-name-from-env-yaml (&optional file-path)
   "If FILE-PATH is non-nil, retrieves the `name` property
