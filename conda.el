@@ -275,12 +275,21 @@ Set for the lifetime of the process.")
                (format " (currently %s)" conda-env-current-name)
              ""))))
 
+(defcustom conda-env-yaml-base-name "environment"
+  "Base filename for acceptable Conda environment YAML files."
+  :type 'string
+  :safe #'stringp
+  :group 'conda)
+
+(make-variable-buffer-local
+ 'conda-env-yaml-base-name)
+
 (defun conda--env-yaml-expand (dir)
-  "If DIR contains an environment YAML file,
+  "If DIR contains an environment YAML file named as `conda-env-yaml-base-name',
 its absolute path is returned. Otherwise, it returns nil."
   (seq-find #'f-exists?
-   (list (f-expand "environment.yaml" dir)
-         (f-expand "environment.yml" dir))))
+   (list (f-expand (concat conda-env-yaml-base-name ".yaml") dir)
+         (f-expand (concat conda-env-yaml-base-name ".yml") dir))))
 
 (defun conda--find-env-yaml (&optional dir)
   "Finds the path of an environment YAML file in DIR,
