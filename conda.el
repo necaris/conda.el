@@ -705,6 +705,48 @@ environment YAML file or similar at the project level."
       (if conda-message-on-environment-switch
           (message "No Conda environment found for <%s>" (buffer-file-name))))))
 
+;;;###autoload
+(defun conda-env-yaml-process-for-buffer (&optional arg env-file)
+  "Operate on conda environment defined by ENV-FILE, a YAML file.
+
+When ENV-FILE is nil, it attempts to look it up in the parent directories
+If not found it raises an error. When ENV-FILE is non-nil, or is found,
+and ARG is nil, it calls a shell process to update environment,
+or to create it if it doesn't yet exist.
+
+If ARG is non-nil it attempts to remove the environment if exists,
+or reports an error otherwise."
+  (interactive "P")
+  (let ((env-file
+         (or (and (file-exists-p env-file) env-file)
+             (conda--find-env-yaml (buffer-file-name)))))
+    (if (not env-file)
+        (user-error "No environment YAML file found.")
+      (let* ((conda-path (conda--get-executable-path))
+             (env-name (conda--get-name-from-env-yaml env-file))
+             (params
+              (cond
+               ((not env-name)
+                (user-error "Could not parse environment name from %s" env-file))
+               ((and arg (not (member env-name (conda-env-candidates))))
+                (user-error "Conda environment <%s> does not exists." env-name))
+               (arg (list "Removing" "remove" "-y" "-n" env-name))
+               ((member env-name (conda-env-candidates))
+                (list "Updating" "update" "-f" env-file))
+               (t (list "Creating" "create" "-f" env-file))))
+             (term-buffer
+              (if (not (file-exists-p conda-path))
+                  (user-error "Could not find Conda executable %s" conda-path)
+                (apply #'make-term (concat "conda-env-" (cadr params))
+                       conda-path nil "env" (cdr params)))))
+        (when term-buffer
+          (with-current-buffer term-buffer
+            (unless (term-check-proc term-buffer)
+              (term-mode)
+              (term-line-mode)))
+          (switch-to-buffer term-buffer))
+        (message "%s Conda environment <%s>" (car params) env-name)))))
+
 (defcustom conda-env-yaml-default-channels '("conda-forge" "defaults")
   "List of Anaconda channels for new environment YAML files,
 used by `conda-env-yaml-open-create-for-buffer'."
@@ -731,17 +773,18 @@ used by `conda-env-yaml-open-create-for-buffer'."
       env-name)))
 
 ;;;###autoload
-(defun conda-env-yaml-open-create-for-buffer ()
+(defun conda-env-yaml-open-create-for-buffer (&optional arg)
   "Open the Conda environment YAML file implied by the current buffer.
 
 If no environment file exists yet, then opens a buffer for a new file
-in the root directory of the current project.
+in the root directory of the current project. If no project is associated with
+the current buffer, then creates it in the directory of the current buffer file.
+If buffer has no associated file, then creates it in the `default-directory'.
 
-If no project is associated with the current buffer,
-then creates it in the directory of the current buffer file.
-
-If buffer has no associated file, then creates it in the `default-directory'."
-  (interactive)
+If environment file exists and was called with one \\[universal-argument],
+it calls `conda-env-yaml-process-for-buffer' with the environment file,
+or if called with more than one universal prefixes, t is passed as argument."
+  (interactive "P")
   (let* ((file-name (buffer-file-name))
          (file-dir (and file-name (f-dirname file-name)))
          (env-file (and file-dir (conda--find-env-yaml file-dir))))
@@ -768,6 +811,8 @@ If buffer has no associated file, then creates it in the `default-directory'."
                    "\n    - ")))
         (insert "\n")
         (message "Generated new Conda environment file %s" env-file)))
+     ((consp arg)
+      (conda-env-yaml-process-for-buffer (<= 14 (car arg)) env-file))
      (t (find-file env-file)
         (message "Opened Conda environment file %s" env-file)))))
 
