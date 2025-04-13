@@ -705,6 +705,24 @@ environment YAML file or similar at the project level."
       (if conda-message-on-environment-switch
           (message "No Conda environment found for <%s>" (buffer-file-name))))))
 
+(defcustom conda-env-yaml-default-channels '("conda-forge" "defaults")
+  "List of Anaconda channels for new environment YAML files,
+used by `conda-env-manage-for-buffer'."
+  :type '(list string)
+  :group 'conda)
+
+(defcustom conda-env-yaml-default-dependencies '("python" "pip")
+  "List of Anaconda package dependencies for new environment YAML files,
+used by `conda-env-manage-for-buffer'."
+  :type '(list string)
+  :group 'conda)
+
+(defcustom conda-env-yaml-default-pip-dependencies '("build" "wheel")
+  "List of PIP package dependencies for new environment YAML files,
+used by `conda-env-manage-for-buffer'."
+  :type '(list string)
+  :group 'conda)
+
 (defun conda--choose-new-environment-name (&optional prompt)
   "Prompt for new environment name with PROMPT, ensuring it does not already exist."
   (let ((env-name (read-string (or prompt "Enter name for new conda environment: "))))
@@ -729,6 +747,19 @@ in the root directory of the current project, or in the `default-directory'."
              (env-file (f-expand (concat conda-env-yaml-base-name ".yaml") env-dir)))
         (find-file env-file)
         (insert "name: " (conda--choose-new-environment-name))
+        (when conda-env-yaml-default-channels
+          (insert (mapconcat #'identity
+                   (cons "\nchannels:" conda-env-yaml-default-channels)
+                   "\n  - ")))
+        (when conda-env-yaml-default-dependencies
+          (insert (mapconcat #'identity
+                   (cons "\ndependencies:" conda-env-yaml-default-dependencies)
+                   "\n  - ")))
+        (when conda-env-yaml-default-pip-dependencies
+          (insert (mapconcat #'identity
+                   (cons "\n  - pip:" conda-env-yaml-default-pip-dependencies)
+                   "\n    - ")))
+        (insert "\n")
         (message "Generated new Conda environment file %s" env-file)))
      (env-file (find-file env-file)
       (message "Opened Conda environment file %s" env-file)))))
