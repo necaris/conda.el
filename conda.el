@@ -705,6 +705,34 @@ environment YAML file or similar at the project level."
       (if conda-message-on-environment-switch
           (message "No Conda environment found for <%s>" (buffer-file-name))))))
 
+(defun conda--choose-new-environment-name (&optional prompt)
+  "Prompt for new environment name with PROMPT, ensuring it does not already exist."
+  (let ((env-name (read-string (or prompt "Enter name for new conda environment: "))))
+    (if (member env-name (conda-env-candidates))
+        (conda--choose-new-environment-name (format "Conda environment %s already exists. Try again: " env-name))
+      env-name)))
+
+;;;###autoload
+(defun conda-env-manage-for-buffer ()
+  "Open the Conda environment YAML file implied by the current buffer.
+
+If no environment file exists yet, then opens a buffer for a new YAML file
+in the root directory of the current project, or in the `default-directory'."
+  (interactive)
+  (let* ((dir (if-let ((filename (buffer-file-name)))
+                  (f-dirname filename) default-directory))
+         (env-file (conda--find-env-yaml dir)))
+    (cond
+     ((null env-file)
+      (let* ((project (project-current dir))
+             (env-dir (if project (project-root project) dir))
+             (env-file (f-expand (concat conda-env-yaml-base-name ".yaml") env-dir)))
+        (find-file env-file)
+        (insert "name: " (conda--choose-new-environment-name))
+        (message "Generated new Conda environment file %s" env-file)))
+     (env-file (find-file env-file)
+      (message "Opened Conda environment file %s" env-file)))))
+
 (defun conda--switch-buffer-auto-activate (&rest args)
   "Add Conda environment activation if a buffer has a file, handling ARGS."
   (let ((filename (buffer-file-name)))
