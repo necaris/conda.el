@@ -705,6 +705,32 @@ environment YAML file or similar at the project level."
       (if conda-message-on-environment-switch
           (message "No Conda environment found for <%s>" (buffer-file-name))))))
 
+;;;###autoload
+(defun conda-env-yaml-open-create-for-buffer ()
+  "Open the Conda environment YAML file implied by the current buffer.
+
+If no environment file exists yet, then opens a buffer for a new file
+in the root directory of the current project.
+
+If no project is associated with the current buffer,
+then creates it in the directory of the current buffer file.
+
+If buffer has no associated file, then creates it in the `default-directory'."
+  (interactive)
+  (let* ((file-name (buffer-file-name))
+         (file-dir (and file-name (f-dirname file-name)))
+         (env-file (and file-dir (conda--find-env-yaml file-dir))))
+    (cond
+     ((null env-file)
+      (let* ((project (project-current))
+             (env-dir (or (and project (project-root project))
+                          file-dir default-directory))
+             (env-file (f-expand (concat conda-env-file-name ".yaml") env-dir)))
+        (find-file env-file)
+        (message "Generated new Conda environment file %s" env-file)))
+     (t (find-file env-file)
+        (message "Opened Conda environment file %s" env-file)))))
+
 (defun conda--switch-buffer-auto-activate (&rest args)
   "Add Conda environment activation if a buffer has a file, handling ARGS."
   (let ((filename (buffer-file-name)))
