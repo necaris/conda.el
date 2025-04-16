@@ -1,3 +1,4 @@
+;; -*- lexical-binding: t; -*-
 ;;; conda.el --- Work with your conda environments
 
 ;; Copyright (C) 2016-2024 Rami Chowdhury
@@ -705,6 +706,15 @@ environment YAML file or similar at the project level."
       (if conda-message-on-environment-switch
           (message "No Conda environment found for <%s>" (buffer-file-name))))))
 
+(defun conda--env-process-exit-message (op env-name &optional callback)
+  ;; capture dynamically scoped closures
+  (lambda (proc _event)
+    (when (memq (process-status proc) '(exit signal))
+      (if (zerop (process-exit-status proc))
+          (message "Finished %s Conda environment <%s>" op env-name)
+        (message "Error while %s Conda environment <%s>" op env-name)))
+    (when callback (funcall callback proc _event))))
+
 ;;;###autoload
 (defun conda-env-yaml-process-for-buffer (&optional remove env-file)
   "Operate on conda environment defined by ENV-FILE, a YAML file.
@@ -746,6 +756,12 @@ or reports an error otherwise."
                    (conda--get-executable-path) nil "env" (cdr params)))))
     (when term-buffer
       (message "%s Conda environment <%s>" (car params) env-name)
+      (let* ((proc (get-buffer-process term-buffer))
+             (current-sentinel (process-sentinel proc)))
+        (set-process-sentinel proc
+         (conda--env-process-exit-message
+          (downcase (car params)) env-name
+          current-sentinel)))
       (with-current-buffer term-buffer
         (unless (term-check-proc term-buffer)
           (term-mode)
