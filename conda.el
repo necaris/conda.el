@@ -723,6 +723,26 @@ used by `conda-env-manage-for-buffer'."
   :type '(list string)
   :group 'conda)
 
+(defcustom conda-pip-requirements-filename "requirements.txt"
+  "Filename for Pip requirements to be detected when generating new Conda environment YAML files."
+  :type 'string
+  :safe #'stringp
+  :group 'conda)
+
+(make-variable-buffer-local
+ 'conda-pip-requirements-filename)
+
+(defun conda--pip-requirements-file-expand (dir)
+  (let ((path (f-expand conda-pip-requirements-filename dir)))
+    (if (f-exists? path) path)))
+
+(defun conda--find-pip-requirements-file (&optional dir)
+  "Finds the path of an `conda-env-yaml-pip-requirements-filename' file in DIR,
+or one of its parent directories, or else returns nil."
+  (let* ((dir (or dir (if-let ((file-name (buffer-file-name))) (f-dirname (f-expand file-name)))))
+         (containing-path (and dir (f-traverse-upwards #'conda--pip-requirements-file-expand dir))))
+    (and containing-path (conda--pip-requirements-file-expand containing-path))))
+
 (defun conda--choose-new-environment-name (&optional prompt)
   "Prompt for new environment name with PROMPT, ensuring it does not already exist."
   (let ((env-name (read-string (or prompt "Enter name for new conda environment: "))))
@@ -739,11 +759,13 @@ in the root directory of the current project, or in the `default-directory'."
   (interactive)
   (let* ((dir (if-let ((filename (buffer-file-name)))
                   (f-dirname filename) default-directory))
-         (env-file (conda--find-env-yaml dir)))
+         (env-file (conda--find-env-yaml dir))
+         (project (project-current dir)))
     (cond
      ((null env-file)
-      (let* ((project (project-current dir))
-             (env-dir (if project (project-root project) dir))
+      (let* ((pip-reqs-file (conda--find-pip-requirements-file))
+             (env-dir (or (if pip-reqs-file (f-dirname pip-reqs-file))
+                          (if project (project-root project)) dir))
              (env-file (f-expand (concat conda-env-yaml-base-name ".yaml") env-dir)))
         (find-file env-file)
         (insert "name: " (conda--choose-new-environment-name))
@@ -755,10 +777,13 @@ in the root directory of the current project, or in the `default-directory'."
           (insert (mapconcat #'identity
                    (cons "\ndependencies:" conda-env-yaml-default-dependencies)
                    "\n  - ")))
-        (when conda-env-yaml-default-pip-dependencies
+        (cond
+         (pip-reqs-file
+          (insert "\n  - pip:\n    - -r " conda-pip-requirements-filename))
+         (conda-env-yaml-default-pip-dependencies
           (insert (mapconcat #'identity
                    (cons "\n  - pip:" conda-env-yaml-default-pip-dependencies)
-                   "\n    - ")))
+                   "\n    - "))))
         (insert "\n")
         (message "Generated new Conda environment file %s" env-file)))
      (env-file (find-file env-file)
