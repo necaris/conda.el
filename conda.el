@@ -816,34 +816,38 @@ or one of its parent directories, or else returns nil."
 ;;;###autoload
 (defun conda-env-manage-for-buffer (&optional arg)
   "Edit the Conda environment YAML file implied by the current buffer,
-or create, update, remove the environment defined in it.
+or create, update, remove environments using it.
+
+If an environment YAML file named `conda-env-yaml-base-name' exists, then is used as the reference.
+
+If called without \\[universal-argument] prefix, and an environment file exists, then opens it for editing.
+If called without \\[universal-argument] prefix, and no environment file exists, then prompts for an
+environment name, and generates a buffer for a new YAML file in the root directory of the current project,
+or in the `default-directory'.
+
+The newly generated environment YAML file takes its defaults from these variables:
+
+- `conda-env-yaml-default-channels',
+- `conda-env-yaml-default-dependencies',
+- `conda-env-yaml-default-pip-dependencies'.
+
+If file named `conda-pip-requirements-filename' exists in one of the parent
+directories, then the generated file will be placed next to it instead,
+and will be referenced directly for PIP dependencies, instead of using
+the `conda-env-yaml-default-pip-dependencies' variable.
+
+If called with one \\[universal-argument] prefix, and an environment file exists,
+then updates the environment from the file, or creates it if not yet exists.
 
 If called with two \\[universal-argument] prefix, it prompts for an environment
-to be removed, suggesting the one defined in the YAML file as default.
-
-If no environment file exists yet, then generates a buffer for a new YAML file
-in the root directory of the current project, or in the `default-directory'.
-
-The values from `conda-env-yaml-default-channels', `conda-env-yaml-base-name',
-`conda-env-yaml-default-pip-dependencies, are used as content. Additionally,
-if a file named `conda-pip-requirements-filename' exists in parent directories,
-then the new environment YAML file will be placed next to it, and will reference
-the PIP requirements file directly, instead of `conda-env-yaml-default-pip-dependencies'.
-
-If the environment file exists, and has been called with one \\[universal-argument] prefix,
-then it calls `conda-env-yaml-process-for-buffer' for the environment file.
-
-If called with two \\[universal-argument] prefixes, then prompts for the name of
-an existing environment and calls `conda-env-yaml-process-for-buffer' with
-the prefix to remove it completely, after confirmation. The default candidate
-suggested is the one defined in the environment YAML file, if such file exists."
+to be removed. In environment YAML file exists its name is used as default."
   (interactive "P")
   (let* ((dir (if-let ((filename (buffer-file-name)))
                   (f-dirname filename) default-directory))
          (env-file (conda--find-env-yaml dir))
          (project (project-current dir)))
     (cond
-     ((and (not arg) (null env-file))
+     ((and (not env-file) (or (not arg) (and (consp arg) (= (car arg) 4))))
       (let* ((pip-reqs-file (conda--find-pip-requirements-file))
              (env-dir (or (if pip-reqs-file (f-dirname pip-reqs-file))
                           (if project (project-root project)) dir))
@@ -869,6 +873,8 @@ suggested is the one defined in the environment YAML file, if such file exists."
         (message "Generated new Conda environment file %s" env-file)))
      ((consp arg)
       (conda-env-yaml-process-for-buffer (<= 14 (car arg)) env-file))
+     ;; only interactive universal prefix arguments are expected
+     (arg (error "Unsupported prefix argument %s" arg))
      (env-file (find-file env-file)
       (message "Opened Conda environment file %s" env-file)))))
 
