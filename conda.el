@@ -740,9 +740,9 @@ or reports an error otherwise."
                 (user-error "Could not parse environment name from %s" env-file))))
          (params
           (cond (remove (let* ((candidates (conda-env-candidates))
-                            (env-name (and (member env-name candidates) env-name))
-                            (env-name (completing-read "Remove Conda environment: "
-                                       candidates nil t nil nil env-name)))
+                               (env-name (and (member env-name candidates) env-name))
+                               (env-name (completing-read "Remove Conda environment: "
+                                          candidates nil t nil nil env-name)))
                        (list "Removing" "remove" "-y" "-n" env-name)))
                 ((member env-name (conda-env-candidates))
                  (list "Updating" "update" "-f" env-file))
