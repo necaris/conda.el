@@ -660,6 +660,50 @@ Returns a list of new path elements."
   "Configure interactive shells for use with conda.el."
   (advice-add 'shell :around #'conda--shell-strip-env))
 
+;; vterm
+
+;;;###autoload
+(defun conda-env-vterm-init (buffer-name)
+  "Activate the current env in a newly opened vterm BUFFER-NAME."
+  (when (and conda-env-current-name
+             (fboundp 'vterm-send-string))
+    (let* ((activate-command (if (eq system-type 'windows-nt)
+                                 "activate"
+                               "conda activate"))
+           (command-string (format "%s %s\n" activate-command conda-env-current-name)))
+      (with-current-buffer buffer-name
+        (vterm-send-string command-string)))))
+
+(defun conda--vterm-strip-env (orig-fun &rest args)
+  "Use the environment without env to start a new vterm, passing ORIG-FUN ARGS."
+  (let* ((buffer (car args))
+         (buffer-name (or buffer (generate-new-buffer-name "*vterm*")))
+         (buffer-exists-already (get-buffer buffer-name)))
+    (if (or buffer-exists-already (not conda-env-current-path))
+        (apply orig-fun args)
+      (progn (setenv "PATH"
+                     (s-join
+                      path-separator
+                      (conda-env-stripped-path (s-split path-separator (getenv "PATH")))))
+             (setenv "VIRTUAL_ENV" nil)
+             (apply orig-fun args)
+             ;; Wait a bit for vterm to initialize before sending the activation command
+             (run-with-timer 0.1 nil
+                             (lambda ()
+                               (conda-env-vterm-init buffer-name)))
+             (setenv "PATH"
+                     (concat
+                      (file-name-as-directory conda-env-current-path)
+                      conda-env-executables-dir
+                      path-separator
+                      (getenv "PATH")))
+             (setenv "VIRTUAL_ENV" conda-env-current-path)))))
+
+;;;###autoload
+(defun conda-env-initialize-vterm ()
+  "Configure vterm for use with conda.el."
+  (advice-add 'vterm :around #'conda--vterm-strip-env))
+
 ;; eshell
 
 (eval-and-compile
