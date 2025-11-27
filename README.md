@@ -60,14 +60,15 @@ make v=v`
   Especially if you've changed from the default configuration, be sure to double-check that
   your Conda _environments_ are correctly located. The default subdirectory is `envs`, so
   if your `conda-env-home-directory` is `~/anaconda3` then by default environments will be looked
-  for in `~/anaconda3/envs`. You can change this with the `conda-env-subdirectory` setting:
+  for in `~/anaconda3/envs`. If your environments are located in a different directory, e.g.
+  `~/myenvs/`, you can modify the `envs_dirs` property of the conda configuration, for example:
+
   ```
-  (setq 
-    conda-env-home-directory (expand-file-name "~/anaconda3/") ;; as in previous example; not required
-    conda-env-subdirectory "myenvs")
+  (setf (alist-get 'envs_dirs conda--config) ["~/myvenvs/"])
   ```
-  Now environments will be searched for under `~/anaconda3/myenvs`.
-  
+
+  Now environments will be searched for under `~/myenvs`.
+
 
 * Use `M-x conda-env-activate` to activate conda environments and `M-x conda-env-deactivate`
   to deactivate them. You can also use `M-x conda-env-activate-for-buffer` to try
