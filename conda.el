@@ -256,8 +256,7 @@ Set for the lifetime of the process.")
   (let ((dir (file-name-as-directory candidate)))
     (and (not (s-blank? candidate))
          (f-directory? dir)
-         (or (f-directory? (concat dir conda-env-executables-dir))
-             (f-directory? (concat dir conda-env-meta-dir))))))
+         (f-directory? (concat dir conda-env-meta-dir)))))
 
 (defun conda--filter-blanks (items)
   "Remove empty strings from ITEMS."
@@ -339,6 +338,13 @@ Otherwise use \"base\" environment if available."
   scripts-activate
   scripts-deactivate)
 
+(defun conda--ensure-params-path (params command)
+  "Return PARAMS if COMMAND produced a usable PATH."
+  (let ((path (conda-env-params-path params)))
+    (unless (and (stringp path) (not (s-blank? path)))
+      (error "Conda %s returned an invalid PATH: %S" command path))
+    params))
+
 (defun conda--call-json-subcommand (subcommand &rest subcommand-args)
   "Call Conda SUBCOMMAND with SUBCOMMAND-ARGS returning JSON.
 The most common additional argument is the environment directory."
@@ -350,41 +356,45 @@ The most common additional argument is the environment directory."
   "Return activation values for the environment in ENV-DIR.
 Returns a `conda-env-params' struct.  At minimum, this will contain an
 updated PATH."
-  (if (conda--supports-json-activator)
-      (let ((result (conda--call-json-subcommand "activate" env-dir)))
-        (make-conda-env-params
-         :path (s-join path-separator (alist-get 'PATH (alist-get 'path result)))
-         :vars-export (alist-get 'export (alist-get 'vars result))
-         :vars-set (alist-get 'set (alist-get 'vars result))
-         :vars-unset (alist-get 'unset (alist-get 'vars result))
-         :scripts-activate (alist-get 'activate (alist-get 'scripts result))
-         :scripts-deactivate  (alist-get 'deactivate (alist-get 'scripts result))))
-    (if (not (conda--supports-old-activate-format))
-        (error "Installed Conda version supports neither JSON nor the old format.  This shouldn't happen!")
-      (make-conda-env-params
-       :path (concat
-              (conda--get-deprecated-path-prefix env-dir)
-              path-separator
-              (getenv "PATH"))))))
+  (conda--ensure-params-path
+   (if (conda--supports-json-activator)
+       (let ((result (conda--call-json-subcommand "activate" env-dir)))
+         (make-conda-env-params
+          :path (s-join path-separator (alist-get 'PATH (alist-get 'path result)))
+          :vars-export (alist-get 'export (alist-get 'vars result))
+          :vars-set (alist-get 'set (alist-get 'vars result))
+          :vars-unset (alist-get 'unset (alist-get 'vars result))
+          :scripts-activate (alist-get 'activate (alist-get 'scripts result))
+          :scripts-deactivate  (alist-get 'deactivate (alist-get 'scripts result))))
+     (if (not (conda--supports-old-activate-format))
+         (error "Installed Conda version supports neither JSON nor the old format.  This shouldn't happen!")
+       (make-conda-env-params
+        :path (concat
+               (conda--get-deprecated-path-prefix env-dir)
+               path-separator
+               (getenv "PATH")))))
+   "activate"))
 
 (defun conda--get-deactivation-parameters (env-dir)
   "Return activation values for the environment in ENV-DIR.
 Returns a `conda-env-params' struct.  At minimum, this will contain an
 updated PATH."
-  (if (conda--supports-json-activator)
-      (let ((result (conda--call-json-subcommand "deactivate")))
-        (make-conda-env-params
-         :path (s-join path-separator (alist-get 'PATH (alist-get 'path result)))
-         :vars-export (alist-get 'export (alist-get 'vars result))
-         :vars-set (alist-get 'set (alist-get 'vars result))
-         :vars-unset (alist-get 'unset (alist-get 'vars result))
-         :scripts-activate (alist-get 'activate (alist-get 'scripts result))
-         :scripts-deactivate  (alist-get 'deactivate (alist-get 'scripts result))))
-    (make-conda-env-params
-     :path (s-with (getenv "PATH")
-             (s-split path-separator)
-             (conda-env-stripped-path)
-             (s-join path-separator)))))
+  (conda--ensure-params-path
+   (if (conda--supports-json-activator)
+       (let ((result (conda--call-json-subcommand "deactivate")))
+         (make-conda-env-params
+          :path (s-join path-separator (alist-get 'PATH (alist-get 'path result)))
+          :vars-export (alist-get 'export (alist-get 'vars result))
+          :vars-set (alist-get 'set (alist-get 'vars result))
+          :vars-unset (alist-get 'unset (alist-get 'vars result))
+          :scripts-activate (alist-get 'activate (alist-get 'scripts result))
+          :scripts-deactivate  (alist-get 'deactivate (alist-get 'scripts result))))
+     (make-conda-env-params
+      :path (s-with (getenv "PATH")
+              (s-split path-separator)
+              (conda-env-stripped-path)
+              (s-join path-separator))))
+   "deactivate"))
 
 (defun conda--get-deprecated-path-prefix (env-dir)
   "Get a path string to utilize the conda env in ENV-DIR.
@@ -510,10 +520,10 @@ Returns a list of new path elements."
   (interactive)
   (if (not (bound-and-true-p conda-env-current-path))
       (message "No Conda environment is active")
-    (run-hooks 'conda-predeactivate-hook)
-    (setq python-shell-virtualenv-root nil)
     (let ((params (conda--get-deactivation-parameters conda-env-current-path))
           (env-name conda-env-current-name))
+      (run-hooks 'conda-predeactivate-hook)
+      (setq python-shell-virtualenv-root nil)
       (if (not (eq nil (conda-env-params-vars-export params)))
           (conda--update-env-from-params params)
         (progn ;; otherwise we fall back to legacy heuristics
@@ -522,13 +532,13 @@ Returns a list of new path elements."
       (setq exec-path (s-split (if (eq system-type 'windows-nt) ";" ":" )
                                (conda-env-params-path params)))
       (setenv "PATH" (conda-env-params-path params))
-    (setq conda-env-current-path nil)
-    (setq conda-env-current-name nil)
-    (conda--eshell-update-path)
-    (conda--set-system-gud-pdb-command-name)
-    (run-hooks 'conda-postdeactivate-hook)
-    (when (called-interactively-p 'interactive)
-      (message "Deactivated Conda environment <%s>" env-name)))))
+      (setq conda-env-current-path nil)
+      (setq conda-env-current-name nil)
+      (conda--eshell-update-path)
+      (conda--set-system-gud-pdb-command-name)
+      (run-hooks 'conda-postdeactivate-hook)
+      (when (called-interactively-p 'interactive)
+        (message "Deactivated Conda environment <%s>" env-name)))))
 
 ;;;###autoload
 (defun conda-env-activate (&optional name)
@@ -545,27 +555,25 @@ Returns a list of new path elements."
   (let ((env-path (or path (read-directory-name "Conda environment directory: "))))
     (if (not (conda--env-dir-is-valid env-path))
         (error "Invalid conda environment path specified: %s" env-path)
-      ;; first, deactivate any existing env
-      (conda-env-deactivate)
-      ;; set the state of the environment, including setting (or re-setting)
-      ;; a buffer-local variable that allows us to skip discovery when we
-      ;; switch back into the buffer.
-      (setq conda-env-current-path env-path)
-      (setq conda-env-current-name (conda-env-dir-to-name env-path))
-      (set (make-local-variable 'conda-project-env-path) env-path)
-      ;; run hooks
-      (run-hooks 'conda-preactivate-hook)
-      ;; push it onto the history
-      (add-to-list 'conda-env-history conda-env-current-name)
       (let* ((env-dir (expand-file-name env-path))
-             (env-exec-dir (concat (file-name-as-directory env-dir)
-                                   conda-env-executables-dir)))
+             (params (conda--get-activation-parameters env-dir)))
+        ;; first, deactivate any existing env
+        (conda-env-deactivate)
+        ;; set the state of the environment, including setting (or re-setting)
+        ;; a buffer-local variable that allows us to skip discovery when we
+        ;; switch back into the buffer.
+        (setq conda-env-current-path env-path)
+        (setq conda-env-current-name (conda-env-dir-to-name env-path))
+        (set (make-local-variable 'conda-project-env-path) env-path)
+        ;; run hooks
+        (run-hooks 'conda-preactivate-hook)
+        ;; push it onto the history
+        (add-to-list 'conda-env-history conda-env-current-name)
         ;; Use pythonic to activate the environment so that anaconda-mode and
         ;; others know how to work on this
         (pythonic-activate env-dir)
         (setq python-shell-virtualenv-root env-dir)
-        (let ((params (conda--get-activation-parameters env-dir))
-	      (inhibit-message t))
+        (let ((inhibit-message t))
           (if (not (eq nil (conda-env-params-vars-export params)))
               (conda--update-env-from-params params)
             (progn ;; otherwise we fall back to legacy heuristics
