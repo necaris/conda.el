@@ -190,13 +190,18 @@ See https://github.com/conda/conda/blob/master/CHANGELOG.md#484-2020-08-06."
 (defun conda--call-json (&rest args)
   "Call Conda with ARGS, assuming we return JSON."
   (let* ((conda (conda--get-executable-path))
+         status
          (output (with-temp-buffer
                    ;; We set the `destination' to ignore stderr -- this may come
                    ;; back to bite us if anything important is communicated
                    ;; there
-                   (apply #'call-process
-                          (append (list conda nil '(t nil) nil) args))
+                   (setq status
+                         (apply #'call-process
+                                (append (list conda nil '(t nil) nil) args)))
                    (buffer-string))))
+    (unless (and (integerp status) (zerop status))
+      (error "Conda command %S exited with status %S"
+             (cons conda args) status))
     (condition-case err
         (if (and (require 'json) (fboundp 'json-parse-string))
             (json-parse-string output :object-type 'alist :null-object nil)
