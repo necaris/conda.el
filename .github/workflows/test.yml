@@ -1,31 +1,25 @@
 name: CI
 on:
   - push
+  - pull_request
 
 jobs:
   test-on-windows:
     runs-on: windows-latest
-    env:
-      CACHE_NUM: 0
     steps:
-      # TODO: figure this out, add caching to all steps
-      # - uses: actions/cache@v1
-      #   with:
-      #     path: C:\Temp\Choco
-      #     key: ${{ env.CACHE_NUM }}
-      # - uses: crazy-max/ghaction-chocolatey@v1
-      #   with:
-      #     args: config set cacheLocation C:\Temp\Choco
-      - uses: crazy-max/ghaction-chocolatey@v1
+      - uses: actions/checkout@v4
+      - name: Install Emacs
+        run: choco install emacs -y
+      - uses: conda-incubator/setup-miniconda@v3
         with:
-          args: install emacs
-      - uses: goanpeca/setup-miniconda@v1
-        with:
-          miniconda-version: latest
+          auto-update-conda: true
+          auto-activate-base: false
+          activate-environment: test
       - name: create conda environment foo
+        shell: bash -l {0}
         run: conda create -y -n foo python=3.6
-      - uses: actions/checkout@v1
       - name: install dependencies & run tests
+        shell: bash -l {0}
         run: >-
           emacs -Q --batch -L .
           --load "ci/deps.el"
@@ -36,6 +30,7 @@ jobs:
   test:
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os:
           - ubuntu-latest
@@ -46,28 +41,21 @@ jobs:
           - 27.1
           - 28.1
           - snapshot
-        miniconda_version:
-          # - 4.4.10
-          # - 4.5.12
-          - 4.6.14
-          - 4.7.12
-          - 4.8.4
-          - 4.12.0
-          - 4.13.0
-          - latest
-    # TODO: specify conda envs in an env var or something
-    # env:
     steps:
+      - uses: actions/checkout@v4
       - uses: purcell/setup-emacs@master
         with:
           version: ${{ matrix.emacs_version }}
-      - uses: goanpeca/setup-miniconda@v1
+      - uses: conda-incubator/setup-miniconda@v3
         with:
-          miniconda-version: ${{ matrix.miniconda_version }}
+          auto-update-conda: true
+          auto-activate-base: false
+          activate-environment: test
       - name: create conda environment foo
+        shell: bash -l {0}
         run: conda create -y -n foo python=3.6
-      - uses: actions/checkout@v1
       - name: install dependencies & run tests
+        shell: bash -l {0}
         run: >-
           emacs -Q --batch -L .
           --load "ci/deps.el"
