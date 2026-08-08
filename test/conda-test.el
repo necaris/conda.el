@@ -10,17 +10,22 @@
 
 ;; Rudimentary test to get us going
 (ert-deftest test-conda-env-candidates ()
-  (let ((conda-anaconda-home "/usr/share/miniconda3"))
+  ;; AIDEV-NOTE: expand paths rather than hardcoding POSIX ones -- the code under
+  ;; test calls `expand-file-name', which prepends a drive letter on Windows.
+  (let* ((conda-anaconda-home (expand-file-name "/usr/share/miniconda3"))
+         (envs-dir (file-name-as-directory
+                    (expand-file-name "envs" conda-anaconda-home)))
+         (foo-dir (file-name-as-directory (concat envs-dir "foo"))))
     (cl-letf (((symbol-function 'conda-env-default-location)
-               (lambda () "/usr/share/miniconda3/envs"))
+               (lambda () envs-dir))
               ((symbol-function 'file-accessible-directory-p)
-               (lambda (dir) (equal dir "/usr/share/miniconda3/envs/")))
+               (lambda (dir) (equal dir envs-dir)))
               ((symbol-function 'directory-files)
                (lambda (&rest _args) '("foo")))
               ((symbol-function 'f-directory?)
                (lambda (dir)
-                 (member dir '("/usr/share/miniconda3/envs/foo/"
-                               "/usr/share/miniconda3/envs/foo/conda-meta")))))
+                 (member dir (list foo-dir
+                                   (concat foo-dir conda-env-meta-dir))))))
       (should
        (equal
         (conda-env-candidates)
