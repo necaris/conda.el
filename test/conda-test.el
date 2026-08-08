@@ -12,10 +12,10 @@
 (ert-deftest test-conda-env-candidates ()
   (setq conda-anaconda-home "/usr/share/miniconda3")
   (setq conda-env-home-directory "/usr/share/miniconda3")
-  (should
-   (equal
-    (conda-env-candidates)
-    '("foo"))))
+  ;; `setup-miniconda` creates a `test` env (activate-environment: test)
+  ;; plus the `foo` env we create in CI, so check membership not exact
+  ;; equality to stay robust across conda versions.
+  (should (member "foo" (conda-env-candidates))))
 
 ;; Not sure how to meaningfully test the below
 
