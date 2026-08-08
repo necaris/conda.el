@@ -10,12 +10,26 @@
 
 ;; Rudimentary test to get us going
 (ert-deftest test-conda-env-candidates ()
-  (setq conda-anaconda-home "/usr/share/miniconda3")
-  (setq conda-env-home-directory "/usr/share/miniconda3")
-  ;; `setup-miniconda` creates a `test` env (activate-environment: test)
-  ;; plus the `foo` env we create in CI, so check membership not exact
-  ;; equality to stay robust across conda versions.
-  (should (member "foo" (conda-env-candidates))))
+  ;; AIDEV-NOTE: expand paths rather than hardcoding POSIX ones -- the code under
+  ;; test calls `expand-file-name', which prepends a drive letter on Windows.
+  (let* ((conda-anaconda-home (expand-file-name "/usr/share/miniconda3"))
+         (envs-dir (file-name-as-directory
+                    (expand-file-name "envs" conda-anaconda-home)))
+         (foo-dir (file-name-as-directory (concat envs-dir "foo"))))
+    (cl-letf (((symbol-function 'conda-env-default-location)
+               (lambda () envs-dir))
+              ((symbol-function 'file-accessible-directory-p)
+               (lambda (dir) (equal dir envs-dir)))
+              ((symbol-function 'directory-files)
+               (lambda (&rest _args) '("foo")))
+              ((symbol-function 'f-directory?)
+               (lambda (dir)
+                 (member dir (list foo-dir
+                                   (concat foo-dir conda-env-meta-dir))))))
+      (should
+       (equal
+        (conda-env-candidates)
+        '("foo"))))))
 
 ;; Not sure how to meaningfully test the below
 
@@ -164,6 +178,52 @@
 ;;      (should (equal test-conda-env-read-name-args
 ;;                     '("prompt" ("one" "two" "three") nil t nil conda-env-history "one"))))
 ;;   ))
+
+(ert-deftest test-conda--env-dir-is-valid-requires-conda-meta ()
+  (cl-letf (((symbol-function 'f-directory?)
+             (lambda (dir)
+               (member dir '("/" "/bin" "/env/" "/env/conda-meta")))))
+    (should-not (conda--env-dir-is-valid "/"))
+    (should (conda--env-dir-is-valid "/env"))))
+
+(ert-deftest test-conda--get-activation-parameters-rejects-empty-path ()
+  (cl-letf (((symbol-function 'conda--supports-json-activator) (lambda () t))
+            ((symbol-function 'conda--call-json-subcommand)
+             (lambda (&rest _args) '((path . ((PATH . nil)))))))
+    (should-error (conda--get-activation-parameters "/env"))))
+
+(ert-deftest test-conda-env-activate-path-does-not-mutate-state-on-param-error ()
+  (let ((conda-env-current-path "/old")
+        (conda-env-current-name "old")
+        (conda-env-history '("old"))
+        (python-shell-virtualenv-root "/old")
+        (old-path (getenv "PATH"))
+        (deactivate-called nil))
+    (cl-letf (((symbol-function 'conda--env-dir-is-valid) (lambda (_path) t))
+              ((symbol-function 'conda--get-activation-parameters)
+               (lambda (_path) (error "bad activation")))
+              ((symbol-function 'conda-env-deactivate)
+               (lambda () (setq deactivate-called t))))
+      (should-error (conda-env-activate-path "/new"))
+      (should-not deactivate-called)
+      (should (equal conda-env-current-path "/old"))
+      (should (equal conda-env-current-name "old"))
+      (should (equal conda-env-history '("old")))
+      (should (equal python-shell-virtualenv-root "/old"))
+      (should (equal (getenv "PATH") old-path)))))
+
+(ert-deftest test-conda-env-deactivate-does-not-mutate-state-on-param-error ()
+  (let ((conda-env-current-path "/old")
+        (conda-env-current-name "old")
+        (python-shell-virtualenv-root "/old")
+        (old-path (getenv "PATH")))
+    (cl-letf (((symbol-function 'conda--get-deactivation-parameters)
+               (lambda (_path) (error "bad deactivation"))))
+      (should-error (conda-env-deactivate))
+      (should (equal conda-env-current-path "/old"))
+      (should (equal conda-env-current-name "old"))
+      (should (equal python-shell-virtualenv-root "/old"))
+      (should (equal (getenv "PATH") old-path)))))
 
 ;; potentially interactive user-exposed functions
 
