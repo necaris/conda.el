@@ -789,7 +789,7 @@ or reports an error otherwise."
                  (user-error "Environment YAML file %s does not exist." env-file))
                 (env-file) ; if the file exists, use it!
                 ((conda--find-env-yaml
-                  (if-let ((filename (buffer-file-name)))
+                  (if-let* ((filename (buffer-file-name)))
                       (f-dirname filename) default-directory)))))
          (env-name
           (when env-file
@@ -859,7 +859,7 @@ used by `conda-env-manage-for-buffer'."
 (defun conda--find-pip-requirements-file (&optional dir)
   "Finds the path of an `conda-env-yaml-pip-requirements-filename' file in DIR,
 or one of its parent directories, or else returns nil."
-  (let* ((dir (or dir (if-let ((file-name (buffer-file-name))) (f-dirname (f-expand file-name)))))
+  (let* ((dir (or dir (if-let* ((file-name (buffer-file-name))) (f-dirname (f-expand file-name)))))
          (containing-path (and dir (f-traverse-upwards #'conda--pip-requirements-file-expand dir))))
     (and containing-path (conda--pip-requirements-file-expand containing-path))))
 
@@ -899,7 +899,7 @@ then updates the environment from the file, or creates it if not yet exists.
 If called with two \\[universal-argument] prefix, it prompts for an environment
 to be removed. In environment YAML file exists its name is used as default."
   (interactive "P")
-  (let* ((dir (if-let ((filename (buffer-file-name)))
+  (let* ((dir (if-let* ((filename (buffer-file-name)))
                   (f-dirname filename) default-directory))
          (env-file (conda--find-env-yaml dir))
          (project (project-current dir)))
